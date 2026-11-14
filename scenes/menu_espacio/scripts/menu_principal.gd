@@ -4,7 +4,7 @@ extends Control
 
 # ---------- Cosas que puedes cambiar fácilmente ----------
 const TITULO := "EL VIAJE DE ALBERTSAHUR"
-const ESCENA_JUEGO := "res://escenas/nivel_1.tscn"
+const ESCENA_JUEGO := "res://scenes/intro.tscn"
 const RUTA := "res://assets/espacio/"
 # Si pones una fuente pixel en esta ruta, el menú la usa sola:
 const RUTA_FUENTE := "res://fuentes/pixel.ttf"
