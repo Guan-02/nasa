@@ -41,6 +41,7 @@ static func _ensure_inputs() -> void:
 
 func _ready() -> void:
 	_ensure_inputs()
+	add_to_group("players")   # para que las cámaras encuentren a los jugadores
 	# Sin gravedad ni piso: movimiento libre en 8 direcciones (top-down).
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	anim.play(idle_anim)
@@ -68,9 +69,10 @@ func _physics_process(_delta: float) -> void:
 	if anim.animation != target:
 		anim.play(target)
 
-# ---------- Interacción (E / Shift) ----------
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(_action("interact")):
+	# ---------- Interacción (E / Shift) ----------
+	# Se lee con Input (no con _unhandled_input) para que funcione
+	# también dentro de la pantalla dividida (SubViewports).
+	if can_move and Input.is_action_just_pressed(_action("interact")):
 		interacted.emit(self)
 		_interact_with_nearby()
 
