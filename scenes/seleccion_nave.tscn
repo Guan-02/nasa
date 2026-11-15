@@ -1,8 +1,8 @@
-[gd_scene format=3 uid="uid://pgfwgeaw5ph0"]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://scenes/pantallas_nuevas_2/scripts/seleccion_nave.gd" id="1_seleccion_nave"]
+[ext_resource type="Script" uid="uid://do78hpd2noja6" path="res://scenes/pantallas_nuevas_2/scripts/seleccion_nave.gd" id="1_seleccion_nave"]
 
-[node name="SeleccionNave" type="Control" unique_id=1991365398]
+[node name="SeleccionNave" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
