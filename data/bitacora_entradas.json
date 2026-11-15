@@ -1,0 +1,44 @@
+{
+	"entradas": [
+		{
+			"id": "apollo_11",
+			"titulo": "Apolo 11",
+			"subtitulo_o_fecha": "Julio de 1969",
+			"texto": "El 16 de julio de 1969 despegó desde el Centro Espacial Kennedy a bordo del cohete [b]Saturno V[/b]. El 20 de julio, el módulo lunar [b]Eagle[/b] alunizó en el [i]Mar de la Tranquilidad[/i] con Neil Armstrong y Buzz Aldrin, mientras Michael Collins permanecía en órbita en el módulo de mando [b]Columbia[/b]. Armstrong se convirtió en el primer ser humano en pisar la Luna. Durante unas dos horas y media de caminata recogieron cerca de [color=#8fd3ff]21.5 kg de rocas y polvo lunar[/color] y dejaron instrumentos científicos, entre ellos un retrorreflector láser que todavía se usa para medir con precisión la distancia entre la Tierra y la Luna.",
+			"ruta_imagen": "res://assets/bitacora/apollo_11.jpg",
+			"desbloqueada": true
+		},
+		{
+			"id": "artemis_2",
+			"titulo": "Artemis II",
+			"subtitulo_o_fecha": "2026",
+			"texto": "Primera misión tripulada del programa [b]Artemis[/b] de la NASA y el primer viaje de astronautas alrededor de la Luna desde el Apolo 17 en 1972. La tripulación —Reid Wiseman (comandante), Victor Glover (piloto), Christina Koch y Jeremy Hansen, de la Agencia Espacial Canadiense— viajó en la nave [b]Orion[/b], lanzada por el cohete [b]SLS[/b]. Durante unos diez días pusieron a prueba los sistemas de soporte vital de Orion y rodearon la cara oculta de la Luna antes de regresar a la Tierra. Fue un paso clave para preparar el regreso de humanos a la superficie lunar, y llevó por primera vez a la vecindad de la Luna a una mujer, a una persona afrodescendiente y a un astronauta no estadounidense.",
+			"ruta_imagen": "res://assets/bitacora/artemis_2.jpg",
+			"desbloqueada": true
+		},
+		{
+			"id": "gemini_4",
+			"titulo": "Gemini 4",
+			"subtitulo_o_fecha": "Junio de 1965",
+			"texto": "Misión de cuatro días tripulada por James McDivitt y Edward White. El 3 de junio de 1965, [b]Ed White[/b] realizó la [color=#8fd3ff]primera caminata espacial estadounidense[/color], flotando unos 23 minutos fuera de la cápsula, unido a ella por un cordón umbilical y moviéndose con una pequeña pistola de gas. La experiencia demostró que los astronautas podían trabajar fuera de la nave, algo indispensable para las futuras misiones a la Luna.",
+			"ruta_imagen": "res://assets/bitacora/gemini_4.jpg",
+			"desbloqueada": false
+		},
+		{
+			"id": "earth_atmosphere",
+			"titulo": "La atmósfera terrestre",
+			"subtitulo_o_fecha": "Ciencia espacial",
+			"texto": "La atmósfera es una capa de gases compuesta principalmente por [b]nitrógeno (78 %)[/b] y [b]oxígeno (21 %)[/b]. Se divide en capas: la [i]troposfera[/i], donde ocurre el clima; la [i]estratosfera[/i], que contiene la capa de ozono que nos protege de la radiación ultravioleta; la [i]mesosfera[/i], donde se queman la mayoría de los meteoros; la [i]termosfera[/i], donde se forman las auroras y orbita la Estación Espacial Internacional; y la [i]exosfera[/i], que se desvanece en el espacio. Por convención, la [color=#8fd3ff]línea de Kármán[/color], a 100 km de altura, marca el inicio del espacio.",
+			"ruta_imagen": "res://assets/bitacora/earth_atmosphere.jpg",
+			"desbloqueada": false
+		},
+		{
+			"id": "lunar_craters",
+			"titulo": "Cráteres lunares",
+			"subtitulo_o_fecha": "Ciencia espacial",
+			"texto": "Los cráteres de la Luna se formaron por el impacto de asteroides y cometas a lo largo de miles de millones de años. Como la Luna casi no tiene atmósfera ni agua líquida, no hay viento ni lluvia que los borren, así que se conservan durante muchísimo tiempo. Algunos, como [b]Tycho[/b], tienen largos rayos brillantes de material expulsado. En los polos existen cráteres en [color=#8fd3ff]sombra permanente[/color] que podrían guardar hielo de agua, uno de los grandes objetivos de exploración del programa Artemis.",
+			"ruta_imagen": "res://assets/bitacora/lunar_craters.jpg",
+			"desbloqueada": false
+		}
+	]
+}
