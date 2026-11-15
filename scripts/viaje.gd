@@ -337,7 +337,7 @@ func _process(delta: float) -> void:
 		var d: int = clamp(1 + int(progreso * 3.0), 1, 3)
 		if d > dia:
 			dia = d
-			_texto_centro("DÍA %d" % d, Color("f5c542"))
+			_texto_centro(TranslationServer.translate("DÍA %d") % d, Color("f5c542"))
 			decir([DIAS.get(d, "")])
 		if indice_evento < eventos.size() and progreso >= float(eventos[indice_evento][0]):
 			var tipo: String = eventos[indice_evento][1]
@@ -442,9 +442,9 @@ func _fin_minijuego(exito: bool, tipo: String) -> void:
 	if exito:
 		decir([BIEN.get(tipo, "¡Bien hecho!")])
 	elif tipo == "asteroides":
-		decir([MAL["asteroides"] % int(casco)])
+		decir([TranslationServer.translate(MAL["asteroides"]) % int(casco)])
 	elif tipo == "electrico":
-		decir([MAL["electrico"] % int(energia)])
+		decir([TranslationServer.translate(MAL["electrico"]) % int(energia)])
 	else:
 		decir([MAL.get(tipo, "Eso no salió bien, pero seguimos.")])
 
@@ -573,7 +573,7 @@ func _fallar(razon: String) -> void:
 		mj.queue_free()
 	sacudir(0.8)
 	_texto_centro("MISIÓN FALLIDA", Color("ff4a3d"))
-	decir([razon + " Revisemos el diseño de la nave e intentémoslo otra vez."])
+	decir([TranslationServer.translate(razon) + TranslationServer.translate(" Revisemos el diseño de la nave e intentémoslo otra vez.")])
 	get_tree().create_timer(2.5).timeout.connect(_panel_fallo.bind(razon))
 
 
@@ -601,7 +601,7 @@ func _panel_fallo(razon: String) -> void:
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(titulo)
 	var info := _etiqueta(16, Color("f4eefc"))
-	info.text = "%s\nDía %d del viaje  |  Fallas resueltas: %d de %d" % [razon, dia, resueltas, total_fallas]
+	info.text = TranslationServer.translate("%s\nDía %d del viaje  |  Fallas resueltas: %d de %d") % [razon, dia, resueltas, total_fallas]
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(info)
 	var botones := HBoxContainer.new()
@@ -643,6 +643,7 @@ func P(x: float, y: float) -> Vector2:
 
 
 func _texto(nodo: CanvasItem, pos: Vector2, s: String, tam: float, color: Color, ancho: float = -1.0, alineacion: int = HORIZONTAL_ALIGNMENT_LEFT) -> void:
+	s = TranslationServer.translate(s)   # el texto dibujado a mano no lo traduce Godot solo
 	nodo.draw_string_outline(fuente, pos, s, alineacion, ancho, int(tam * k), int(3 * k), Color(0, 0, 0, 0.85))
 	nodo.draw_string(fuente, pos, s, alineacion, ancho, int(tam * k), color)
 
@@ -674,7 +675,7 @@ func _dibujar_hud() -> void:
 	# --- Línea de estado ---
 	var estado_r := R(232, 52, 560, 20)
 	hud.draw_rect(estado_r, Color(0.05, 0.06, 0.08, 0.75))
-	var linea := "DÍA %d DE 3  |  O2 %d%%  |  FUEL %d%%  |  ENERGÍA %d%%  |  CASCO %d%%  |  DATOS %d" % [dia, int(oxigeno), int(combustible), int(energia), int(casco), int(datos)]
+	var linea := TranslationServer.translate("DÍA %d DE 3  |  O2 %d%%  |  FUEL %d%%  |  ENERGÍA %d%%  |  CASCO %d%%  |  DATOS %d") % [dia, int(oxigeno), int(combustible), int(energia), int(casco), int(datos)]
 	_texto(hud, Vector2(estado_r.position.x, estado_r.position.y + 15 * k), linea, 10, Color("dfe6ee"), estado_r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
 
 	# --- Medidores de la pared izquierda (encima de los de la imagen) ---
@@ -964,6 +965,7 @@ class MinijuegoAsteroides extends Control:
 
 	func texto(pos: Vector2, s: String, tam: float, color: Color, ancho: float = -1.0, alineacion: int = HORIZONTAL_ALIGNMENT_LEFT) -> void:
 		var t := int(tam * k)
+		s = TranslationServer.translate(s)   # el texto dibujado a mano no lo traduce Godot solo
 		draw_string_outline(fuente, pos, s, alineacion, ancho, t, int(3 * k), Color(0, 0, 0, 0.8))
 		draw_string(fuente, pos, s, alineacion, ancho, t, color)
 
@@ -1225,9 +1227,9 @@ class MinijuegoAsteroides extends Control:
 			texto(b.position + Vector2(b.size.x * 0.32, b.size.y * 0.8), flechas[i], 10, C_TEXTO)
 		draw_circle(PV(CRUCETA), 4 * k, Color("5d8a7a"))
 
-		texto(P(572, 372), "%.1f s" % max(restante, 0.0), 12, Color("1c1f24"))
+		texto(P(572, 372), TranslationServer.translate("%.1f s") % max(restante, 0.0), 12, Color("1c1f24"))
 		var comb: float = viaje.combustible
-		texto(P(572, 390), "FUEL %d%%" % int(comb), 10, C_ROJO if comb < 15.0 else Color("1c1f24"))
+		texto(P(572, 390), TranslationServer.translate("FUEL %d%%") % int(comb), 10, C_ROJO if comb < 15.0 else Color("1c1f24"))
 		if retraso > 0.0:
 			texto(P(572, 406), "RETRASO 0.2s", 8, Color("8a2a14"))
 		if aviso_combustible > 0.0:
@@ -1386,6 +1388,7 @@ class MinijuegoElectrico extends Control:
 
 	func texto(pos: Vector2, s: String, tam: float, color: Color, ancho: float = -1.0, alineacion: int = HORIZONTAL_ALIGNMENT_LEFT) -> void:
 		var t := int(tam * k)
+		s = TranslationServer.translate(s)   # el texto dibujado a mano no lo traduce Godot solo
 		draw_string_outline(fuente, pos, s, alineacion, ancho, t, int(3 * k), Color(0, 0, 0, 0.8))
 		draw_string(fuente, pos, s, alineacion, ancho, t, color)
 
@@ -1437,10 +1440,10 @@ class MinijuegoElectrico extends Control:
 		for e in encendidos:
 			if e:
 				n += 1
-		texto(P(224, 500), "%d / %d" % [n, encendidos.size()], 14, C_VERDE if n == encendidos.size() else C_TEXTO)
+		texto(P(224, 500), TranslationServer.translate("%d / %d") % [n, encendidos.size()], 14, C_VERDE if n == encendidos.size() else C_TEXTO)
 		var en: float = viaje.energia
 		var c_energia := C_ROJO if en < 25.0 else (C_AMBAR if en < 50.0 else C_VERDE)
-		texto(P(300, 500), "ENERGÍA %d%%" % int(en), 11, c_energia)
+		texto(P(300, 500), TranslationServer.translate("ENERGÍA %d%%") % int(en), 11, c_energia)
 		# Barra de energía
 		var barra := R(224, 504, 194, 4)
 		draw_rect(barra, Color(0, 0, 0, 0.6))
@@ -1608,6 +1611,7 @@ class MinijuegoOxigeno extends Control:
 
 	func texto(pos: Vector2, s: String, tam: float, color: Color, ancho: float = -1.0, alineacion: int = HORIZONTAL_ALIGNMENT_LEFT) -> void:
 		var t := int(tam * k)
+		s = TranslationServer.translate(s)   # el texto dibujado a mano no lo traduce Godot solo
 		draw_string_outline(fuente, pos, s, alineacion, ancho, t, int(3 * k), Color(0, 0, 0, 0.8))
 		draw_string(fuente, pos, s, alineacion, ancho, t, color)
 
@@ -1680,7 +1684,7 @@ class MinijuegoOxigeno extends Control:
 		texto(P(214, 493), "LAS VÁLVULAS (CLIC o 1-2-3)", 9, C_ROJO)
 		var ox: float = viaje.oxigeno
 		var c_ox := C_ROJO if ox < 25.0 else (C_AMBAR if ox < 50.0 else C_VERDE)
-		texto(P(214, 516), "OXÍGENO: %d%%" % int(ox), 12, c_ox)
+		texto(P(214, 516), TranslationServer.translate("OXÍGENO: %d%%") % int(ox), 12, c_ox)
 		var barra := R(214, 521, 214, 4)
 		draw_rect(barra, Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(barra.position, Vector2(barra.size.x * clamp(ox / 100.0, 0.0, 1.0), barra.size.y)), c_ox)

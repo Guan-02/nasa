@@ -147,7 +147,7 @@ func _reiniciar_intento() -> void:
 	aviso_60 = false
 	aviso_30 = false
 	terminado = false
-	_mostrar_aviso("DESCENSO TERMINAL — %d m" % int(ALTURA_INICIAL), Color.WHITE, 3.0)
+	_mostrar_aviso(TranslationServer.translate("DESCENSO TERMINAL — %d m") % int(ALTURA_INICIAL), Color.WHITE, 3.0)
 	_actualizar_ui()
 
 
@@ -307,7 +307,7 @@ func _revisar_avisos() -> void:
 		contacto = true
 		var texto := "CONTACT LIGHT"
 		if apagado_automatico_en_contacto:
-			texto += " — motor apagado"
+			texto += TranslationServer.translate(" — motor apagado")
 		_mostrar_aviso(texto, Color(0.5, 0.8, 1.0), 2.0)
 		return
 
@@ -347,26 +347,26 @@ func _color_por_velocidad(v: float, ideal: float, maximo: float) -> Color:
 
 
 func _actualizar_ui() -> void:
-	label_altitud.text = "Altitud: %.1f m" % altitud
+	label_altitud.text = TranslationServer.translate("Altitud: %.1f m") % altitud
 
 	# Combustible en kg y en segundos de vuelo estacionario
 	barra_combustible.value = combustible
-	label_combustible.text = "Combustible: %d kg  (~%d s)" % [ceili(combustible), int(_segundos_de_vuelo())]
+	label_combustible.text = TranslationServer.translate("Combustible: %d kg  (~%d s)") % [ceili(combustible), int(_segundos_de_vuelo())]
 	label_combustible.modulate = COLOR_PELIGRO if _segundos_de_vuelo() <= 30.0 else Color.WHITE
 
 	# Velocidad vertical (solo cuenta si baja), en m/s y km/h
 	var v_baja: float = max(vel.y, 0.0)
 	barra_velocidad.value = min(v_baja, VEL_MAX_BARRA)
-	label_velocidad.text = "Vel. vertical: %.1f m/s  (%.1f km/h)" % [vel.y, vel.y * 3.6]
+	label_velocidad.text = TranslationServer.translate("Vel. vertical: %.1f m/s  (%.1f km/h)") % [vel.y, vel.y * 3.6]
 	var color_v: Color = _color_por_velocidad(v_baja, VEL_TOQUE_IDEAL, VEL_TOQUE_MAX)
 	label_velocidad.modulate = color_v
 	barra_velocidad.modulate = color_v
 
 	# Velocidad horizontal
-	label_horizontal.text = "Vel. horizontal: %.1f m/s" % vel.x
+	label_horizontal.text = TranslationServer.translate("Vel. horizontal: %.1f m/s") % vel.x
 	label_horizontal.modulate = COLOR_OK if absf(vel.x) <= VEL_HORIZONTAL_MAX else COLOR_PELIGRO
 
-	label_integridad.text = "Integridad de la nave: %d%%" % roundi(integridad)
+	label_integridad.text = TranslationServer.translate("Integridad de la nave: %d%%") % roundi(integridad)
 
 
 # ---------------- SEÑALES (body_entered) ----------------
@@ -379,13 +379,13 @@ func _on_zona_segura_body_entered(body: Node2D) -> void:
 	var deriva: float = absf(vel.x)
 
 	if v_toque > VEL_TOQUE_MAX:
-		_fallo("¡Impacto brusco!\nToque a %.1f m/s (máx. %.1f m/s)" % [v_toque, VEL_TOQUE_MAX])
+		_fallo(TranslationServer.translate("¡Impacto brusco!\nToque a %.1f m/s (máx. %.1f m/s)") % [v_toque, VEL_TOQUE_MAX])
 	elif deriva > VEL_HORIZONTAL_MAX:
-		_fallo("¡Volcadura!\nDeriva lateral de %.1f m/s (máx. %.1f m/s)" % [deriva, VEL_HORIZONTAL_MAX])
+		_fallo(TranslationServer.translate("¡Volcadura!\nDeriva lateral de %.1f m/s (máx. %.1f m/s)") % [deriva, VEL_HORIZONTAL_MAX])
 	elif v_toque <= VEL_TOQUE_IDEAL:
-		_victoria("¡Alunizaje perfecto!\nToque a %.1f m/s (%.1f km/h)" % [v_toque, v_toque * 3.6])
+		_victoria(TranslationServer.translate("¡Alunizaje perfecto!\nToque a %.1f m/s (%.1f km/h)") % [v_toque, v_toque * 3.6])
 	else:
-		_victoria("Alunizaje exitoso (toque firme)\nToque a %.1f m/s (%.1f km/h)" % [v_toque, v_toque * 3.6])
+		_victoria(TranslationServer.translate("Alunizaje exitoso (toque firme)\nToque a %.1f m/s (%.1f km/h)") % [v_toque, v_toque * 3.6])
 
 
 ## Conectada desde ZonaPeligrosaIzq y ZonaPeligrosaDer -> body_entered
@@ -408,7 +408,7 @@ func _victoria(texto: String) -> void:
 	_detener_nave()
 	nave.global_position.y = tope_plataforma - mitad_alto_nave  # asentar sobre la plataforma
 	altitud = 0.0
-	_mostrar_mensaje("%s\nCombustible restante: %d kg" % [texto, ceili(combustible)], COLOR_OK)
+	_mostrar_mensaje(TranslationServer.translate("%s\nCombustible restante: %d kg") % [texto, ceili(combustible)], COLOR_OK)
 	_actualizar_ui()
 	# Bitácora: alunizaje exitoso
 	var bitacora = get_node_or_null("/root/Bitacora")
@@ -423,9 +423,9 @@ func _fallo(texto: String) -> void:
 	integridad = max(integridad - DANO_IMPACTO, 0.0)
 
 	if integridad <= 0.0:
-		texto += "\n\nNAVE DESTRUIDA - Misión fallida\n\nPresiona R para reiniciar la misión"
+		texto += TranslationServer.translate("\n\nNAVE DESTRUIDA - Misión fallida\n\nPresiona R para reiniciar la misión")
 	else:
-		texto += "\n-%d de integridad\n\nPresiona R para reintentar" % int(DANO_IMPACTO)
+		texto += TranslationServer.translate("\n-%d de integridad\n\nPresiona R para reintentar") % int(DANO_IMPACTO)
 	_mostrar_mensaje(texto, COLOR_PELIGRO)
 	_actualizar_ui()
 

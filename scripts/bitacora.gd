@@ -19,6 +19,11 @@ signal entrada_desbloqueada(id: String)
 ## Se emite cuando se (re)cargan los datos desde el JSON.
 signal datos_cargados
 
+## Los textos de cada entrada pueden venir en los dos idiomas:
+##     "titulo": {"es": "Cráteres lunares", "en": "Lunar Craters"}
+## También se acepta un texto normal, y entonces se usa igual en los dos.
+## Quien decide cuál se muestra es el autoload "Idioma".
+
 ## Archivo con el contenido de las entradas (solo lectura, viaja con el juego).
 const RUTA_DATOS := "res://data/bitacora_entradas.json"
 ## Archivo con el progreso del jugador (se escribe en la carpeta de usuario).
@@ -41,6 +46,19 @@ var _indice_por_id: Dictionary = {}
 func _ready() -> void:
 	_cargar_datos()
 	_cargar_progreso()
+	var idioma = get_node_or_null("/root/Idioma")
+	if idioma != null:
+		idioma.cambiado.connect(_on_idioma_cambiado)
+
+
+## Vuelve a leer los textos en el idioma nuevo, conservando el progreso.
+func _on_idioma_cambiado(_codigo: String) -> void:
+	var desbloqueadas := obtener_ids_desbloqueados()
+	_cargar_datos()
+	for id in desbloqueadas:
+		if _indice_por_id.has(id):
+			_entradas[_indice_por_id[id]]["desbloqueada"] = true
+	datos_cargados.emit()
 
 
 # ---------------------------------------------------------------------
@@ -118,6 +136,16 @@ func reiniciar_progreso() -> void:
 #  CARGA DE DATOS
 # ---------------------------------------------------------------------
 
+## Elige el texto del idioma actual. Acepta {"es": ..., "en": ...} o un texto suelto.
+func _idioma(valor) -> String:
+	var idioma = get_node_or_null("/root/Idioma")
+	if idioma != null:
+		return idioma.texto(valor)
+	if valor is Dictionary:
+		return str(valor.get("es", ""))
+	return str(valor)
+
+
 func _cargar_datos() -> void:
 	_entradas.clear()
 	_indice_por_id.clear()
@@ -150,9 +178,9 @@ func _cargar_datos() -> void:
 		# Normalizamos campos para que la UI nunca encuentre claves faltantes.
 		var entrada := {
 			"id": id,
-			"titulo": str(item.get("titulo", id)),
-			"subtitulo_o_fecha": str(item.get("subtitulo_o_fecha", "")),
-			"texto": str(item.get("texto", "")),
+			"titulo": _idioma(item.get("titulo", id)),
+			"subtitulo_o_fecha": _idioma(item.get("subtitulo_o_fecha", "")),
+			"texto": _idioma(item.get("texto", "")),
 			"ruta_imagen": str(item.get("ruta_imagen", "")),
 			# Opcional: si la imagen es una hoja de cuadros (spritesheet) animada
 			# {"columnas": 11, "filas": 8, "frames": 88, "fps": 12.5}

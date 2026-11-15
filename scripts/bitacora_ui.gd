@@ -66,6 +66,11 @@ func _ready() -> void:
 	texto.bbcode_enabled = true
 	texto.scroll_active = true
 	texto.fit_content = false
+	# Estos textos ya vienen en el idioma correcto desde el JSON,
+	# así que Godot no debe volver a traducirlos.
+	texto.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	titulo_entrada.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	subtitulo.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	subtitulo.bbcode_enabled = true
 	scroll_lista.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	boton_diario.focus_mode = Control.FOCUS_NONE  # Evita que Espacio/Enter lo active al jugar
@@ -75,7 +80,7 @@ func _ready() -> void:
 	boton_anterior.pressed.connect(_navegar.bind(-1))
 	boton_siguiente.pressed.connect(_navegar.bind(1))
 	Bitacora.entrada_desbloqueada.connect(_on_entrada_desbloqueada)
-	Bitacora.datos_cargados.connect(_construir_lista)
+	Bitacora.datos_cargados.connect(_refrescar)
 
 	_construir_lista()
 
@@ -143,6 +148,13 @@ func cerrar() -> void:
 #  LISTA DE ENTRADAS (columna izquierda)
 # ---------------------------------------------------------------------
 
+## Se llama al cargar los datos y al cambiar de idioma.
+func _refrescar() -> void:
+	_construir_lista()
+	if ventana.visible and _id_seleccionado != "":
+		mostrar_entrada(_id_seleccionado)
+
+
 func _construir_lista() -> void:
 	# Limpiamos los botones anteriores (remove_child para que desaparezcan ya).
 	for hijo in lista_entradas.get_children():
@@ -166,14 +178,14 @@ func _construir_lista() -> void:
 			boton.tooltip_text = entrada["subtitulo_o_fecha"]
 			boton.pressed.connect(mostrar_entrada.bind(id))
 		else:
-			boton.text = texto_bloqueada
+			boton.text = TranslationServer.translate(texto_bloqueada)
 			boton.disabled = true
 			boton.focus_mode = Control.FOCUS_NONE
 
 		lista_entradas.add_child(boton)
 		_botones[id] = boton
 
-	titulo_diario.text = "Bitácora Espacial  —  %d / %d descubiertas" % [
+	titulo_diario.text = TranslationServer.translate("Bitácora Espacial  —  %d / %d descubiertas") % [
 		Bitacora.contar_desbloqueadas(), Bitacora.contar_total()]
 
 	# Re-marca la entrada que estaba seleccionada (si sigue existiendo).
@@ -192,7 +204,7 @@ func mostrar_entrada(id: String) -> void:
 	_id_seleccionado = id
 
 	titulo_entrada.text = entrada["titulo"]
-	subtitulo.text = "[i]%s[/i]" % entrada["subtitulo_o_fecha"]
+	subtitulo.text = TranslationServer.translate("[i]%s[/i]") % entrada["subtitulo_o_fecha"]
 	texto.text = entrada["texto"]  # Con bbcode_enabled, el BBCode se interpreta
 	texto.scroll_to_line(0)
 	_poner_imagen(_cargar_textura(entrada["ruta_imagen"]), entrada.get("animacion", {}))
@@ -207,9 +219,9 @@ func mostrar_entrada(id: String) -> void:
 
 func _mostrar_vacio() -> void:
 	_id_seleccionado = ""
-	titulo_entrada.text = "Sin entradas todavía"
+	titulo_entrada.text = TranslationServer.translate("Sin entradas todavía")
 	subtitulo.text = ""
-	texto.text = "[i]Completa misiones para descubrir nuevas entradas de la bitácora.[/i]"
+	texto.text = TranslationServer.translate("[i]Completa misiones para descubrir nuevas entradas de la bitácora.[/i]")
 	_poner_imagen(textura_respaldo, {})
 	_actualizar_navegacion()
 
@@ -283,7 +295,7 @@ func _actualizar_navegacion() -> void:
 	var indice := ids.find(_id_seleccionado)
 	boton_anterior.disabled = indice <= 0
 	boton_siguiente.disabled = indice == -1 or indice >= ids.size() - 1
-	contador.text = "" if indice == -1 else "%d / %d" % [indice + 1, ids.size()]
+	contador.text = "" if indice == -1 else TranslationServer.translate("%d / %d") % [indice + 1, ids.size()]
 
 
 # ---------------------------------------------------------------------
