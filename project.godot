@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-Bitacora="*uid://cb6ckdotho480"
+MenuPausa1="*uid://cmhtb8fi47v5c"
 
 [display]
 

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://efmapp4aomjk"]
 
-[ext_resource type="Script" uid="uid://x36enhqdr5ap" path="res://scripts/viaje.gd" id="1_cj6gd"]
+[ext_resource type="Script" uid="uid://d338leidqp2io" path="res://scripts/viaje.gd" id="1_cj6gd"]
 
 [node name="Viaje" type="Control" unique_id=2064489848]
 layout_mode = 3
