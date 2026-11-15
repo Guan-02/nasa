@@ -13,7 +13,9 @@ min_zoom = 1.0
 max_zoom = 4.0
 
 [node name="CharacterBody2D" parent="." unique_id=1761300502 instance=ExtResource("2_v0wbj")]
+z_index = 5
 position = Vector2(-9, -3)
 
 [node name="CharacterBody2D2" parent="." unique_id=1256015722 instance=ExtResource("2_8xf2a")]
+z_index = 5
 position = Vector2(12, -2)

@@ -21,9 +21,7 @@ InputSetup="*uid://c0sn8vllqdsnm"
 
 [display]
 
-window/size/viewport_width=480
-window/size/viewport_height=270
-window/size/mode=3
+window/size/mode=2
 window/size/window_width_override=1140
 window/size/window_height_override=810
 window/stretch/mode="viewport"
