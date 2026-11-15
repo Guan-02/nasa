@@ -9,7 +9,7 @@ extends Control
 const FONDO := "res://assets/atmosfera/atmosfera.png"
 const RUTA_OBST := "res://assets/obstaculos/"
 const RUTA_FUENTE := "res://fuentes/pixel.ttf"
-const ESCENA_SIGUIENTE := ""                      # la fase que sigue, cuando exista
+const ESCENA_SIGUIENTE := "res://scenes/orbita.tscn"   # al llegar a la exosfera se pasa sola aquí
 const ESCENA_SELECCION := "res://scenes/seleccion_nave.tscn"
 const ESCENA_MENU := "res://scenes/menu_principal.tscn"
 const POSICION_NAVE := 0.62      # altura de la nave en pantalla mientras sube (0 arriba, 1 abajo)
@@ -489,9 +489,17 @@ func _recoger_escudo(ob: Dictionary) -> void:
 
 func _exito() -> void:
 	estado = "exito"
-	_texto_centro("¡EXOSFERA ALCANZADA!", Color("f5c542"), 3.0)
+	_texto_centro("¡EXOSFERA ALCANZADA!", Color("f5c542"), 1.5)
 	decir(DIALOGOS.exito)
-	get_tree().create_timer(3.0).timeout.connect(_mostrar_resultado.bind(true))
+	get_tree().create_timer(2.0).timeout.connect(_cambiar_escena)
+
+
+## Al ganar ya no sale el cuadro de stats: pasa directo a la siguiente escena
+func _cambiar_escena() -> void:
+	if ResourceLoader.exists(ESCENA_SIGUIENTE):
+		get_tree().change_scene_to_file(ESCENA_SIGUIENTE)
+	else:
+		push_error("No existe " + ESCENA_SIGUIENTE + " (revisa que esté en res://scenes/)")
 
 
 func _fallo() -> void:
