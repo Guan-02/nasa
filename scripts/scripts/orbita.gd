@@ -262,7 +262,7 @@ func _process(delta: float) -> void:
 			escala_orbita = 1.0 + 0.45 * t_escape * t_escape
 			_mover_en_orbita(w * (1.0 + t_escape * 0.9) * delta)
 			var v: float = lerp(27600.0, 40300.0, clamp(t_escape / 2.0, 0.0, 1.0))
-			lbl_velocidad.text = "VELOCIDAD: %s km/h" % _miles(v)
+			lbl_velocidad.text = TranslationServer.translate("VELOCIDAD: %s km/h") % _miles(v)
 			if t_escape >= 1.8:
 				_iniciar_acercamiento()
 		"acercamiento":
@@ -316,7 +316,7 @@ func _mover_en_orbita(avance: float) -> void:
 	angulo += avance
 	vueltas += avance / TAU
 	if estado == "orbita" or estado == "listo":
-		lbl_vuelta.text = "VUELTA %d" % (int(vueltas) + 1)
+		lbl_vuelta.text = TranslationServer.translate("VUELTA %d") % (int(vueltas) + 1)
 	capsula.position = _punto(angulo)
 	# La punta mira hacia donde avanza
 	var siguiente := _punto(angulo + 0.05)
@@ -428,7 +428,7 @@ func _animar_acercamiento(t: float) -> void:
 		capsula.rotation = lerp_angle(capsula.rotation, (adelante - p).angle() + PI * 0.5, 0.2)
 	var esc := ALTO_CAPSULA * k / capsula.texture.get_size().y
 	capsula.scale = Vector2(esc, esc)
-	lbl_velocidad.text = "DISTANCIA A LA LUNA: %s km" % _miles(DISTANCIA_KM * (1.0 - s))
+	lbl_velocidad.text = TranslationServer.translate("DISTANCIA A LA LUNA: %s km") % _miles(DISTANCIA_KM * (1.0 - s))
 
 
 func _bezier(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
@@ -806,15 +806,15 @@ func _mostrar_resultado() -> void:
 	if r.is_empty():
 		info.text = "Escapamos de la gravedad de la Tierra."
 	else:
-		info.text = "Nave: %s\nResistencia restante: %d / %d   (+%d)\nGolpes recibidos: %d  |  Escudos recogidos: %d\nAltitud máxima: %s km\nDatos científicos: %d\nPresupuesto sin usar: %s   (+%d)" % [
+		info.text = TranslationServer.translate("Nave: %s\nResistencia restante: %d / %d   (+%d)\nGolpes recibidos: %d  |  Escudos recogidos: %d\nAltitud máxima: %s km\nDatos científicos: %d\nPresupuesto sin usar: %s   (+%d)") % [
 			r.nave, r.vida, r.vida_max, r.bono_vida, r.golpes, r.escudos, r.altitud,
 			r.datos, Mision.dinero(Mision.presupuesto_restante), r.bono_dinero]
 	if not Mision.viaje.is_empty():
-		info.text += "\nViaje a la Luna: %d de %d fallas resueltas" % [int(Mision.viaje.resueltas), int(Mision.viaje.total)]
+		info.text += TranslationServer.translate("\nViaje a la Luna: %d de %d fallas resueltas") % [int(Mision.viaje.resueltas), int(Mision.viaje.total)]
 	v.add_child(info)
 	if not r.is_empty():
 		var puntaje := _etiqueta(28, Color("f5c542"))
-		puntaje.text = "PUNTAJE: %d" % int(r.puntaje)
+		puntaje.text = TranslationServer.translate("PUNTAJE: %d") % int(r.puntaje)
 		puntaje.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(puntaje)
 

@@ -122,7 +122,7 @@ func _ready() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 	decir([
-		"¡Bienvenido al taller, director! Aquí equipamos la %s antes del despegue." % datos_nave.nombre,
+		TranslationServer.translate("¡Bienvenido al taller, director! Aquí equipamos la %s antes del despegue.") % datos_nave.nombre,
 		"Toca un stat a la izquierda y compra una mejora a la derecha: mínima, media o máxima. Ningún stat pasa de 100.",
 		"Cada stat cambia el vuelo: propulsión sube más rápido, energía da escudos, masa da resistencia, comunicaciones da avisos y ciencia da puntos.",
 		"Ojo: el dinero que no gastes también suma puntos al final. ¡Elige con cuidado!",
@@ -201,9 +201,9 @@ func _comprar(nivel: int) -> void:
 	compras.append([stat_elegido, util, costo])
 	_actualizar(true)
 	var nombre: String = lbl_stat.text
-	var linea := "¡Listo! Mejora %s instalada: %s sube de %d a %d." % [m.nombre, nombre, antes, antes + util]
+	var linea := TranslationServer.translate("¡Listo! Mejora %s instalada: %s sube de %d a %d.") % [TranslationServer.translate(m.nombre), TranslationServer.translate(nombre), antes, antes + util]
 	if util < int(m.puntos):
-		linea += " (Solo se aprovecharon %d puntos porque el máximo es 100.)" % util
+		linea += TranslationServer.translate(" (Solo se aprovecharon %d puntos porque el máximo es 100.)") % util
 	decir([linea, _comentario_efecto(stat_elegido)])
 
 
@@ -214,22 +214,22 @@ func _deshacer() -> void:
 	Mision.mejoras[c[0]] = int(Mision.mejoras.get(c[0], 0)) - int(c[1])
 	Mision.presupuesto_restante += int(c[2])
 	_actualizar(true)
-	decir(["Desinstalamos la última mejora y te devolvieron %s." % Mision.dinero(int(c[2]))])
+	decir([TranslationServer.translate("Desinstalamos la última mejora y te devolvieron %s.") % Mision.dinero(int(c[2]))])
 
 
 func _comentario_efecto(stat: String) -> String:
 	match stat:
 		"propulsion":
-			return "Ahora llegaremos a la exosfera en unos %d segundos de vuelo a toda potencia." % int(Mision.duracion_ascenso(id_nave))
+			return TranslationServer.translate("Ahora llegaremos a la exosfera en unos %d segundos de vuelo a toda potencia.") % int(Mision.duracion_ascenso(id_nave))
 		"energia":
-			return "El escudo protector aguantará %d golpe(s) antes de que el casco reciba daño." % Mision.escudo_inicial(id_nave)
+			return TranslationServer.translate("El escudo protector aguantará %d golpe(s) antes de que el casco reciba daño.") % Mision.escudo_inicial(id_nave)
 		"masa":
-			return "El casco aguanta %d golpes, y la maniobra quedó %s." % [Mision.vida_max(id_nave), Mision.maniobra_texto(id_nave).to_lower()]
+			return TranslationServer.translate("El casco aguanta %d golpes, y la maniobra quedó %s.") % [Mision.vida_max(id_nave), TranslationServer.translate(Mision.maniobra_texto(id_nave)).to_lower()]
 		"ciencia":
-			return "Juntaremos %d puntos de datos en cada capa de la atmósfera." % Mision.datos_por_capa(id_nave)
+			return TranslationServer.translate("Juntaremos %d puntos de datos en cada capa de la atmósfera.") % Mision.datos_por_capa(id_nave)
 		"comunicaciones":
 			var extra := " ¡Y ya nos avisarán de dónde vienen aviones y satélites!" if Mision.avisos_laterales(id_nave) else ""
-			return "Tendremos %.1f segundos de aviso antes de cada rayo.%s" % [Mision.aviso_rayo(id_nave), extra]
+			return TranslationServer.translate("Tendremos %.1f segundos de aviso antes de cada rayo.%s") % [Mision.aviso_rayo(id_nave), extra]
 	return ""
 
 
@@ -240,7 +240,7 @@ func _actualizar(animar: bool) -> void:
 		var base: int = datos_nave.stats[s[0]]
 		var total := Mision.valor(id_nave, s[0])
 		var extra := total - base
-		valores[s[0]].text = str(total) if extra <= 0 else "%d (+%d)" % [total, extra]
+		valores[s[0]].text = str(total) if extra <= 0 else TranslationServer.translate("%d (+%d)") % [total, extra]
 		valores[s[0]].add_theme_color_override("font_color", C_CIAN if extra > 0 else C_DORADO)
 		var barra: ProgressBar = barras[s[0]]
 		var c := _color_stat(total)
@@ -263,9 +263,9 @@ func _actualizar(animar: bool) -> void:
 		col = C_AMARILLO
 	lbl_restante.add_theme_color_override("font_color", col)
 
-	lbl_resumen.text = "RESISTENCIA %d  |  MANIOBRA %s  |  ESCUDO %d\nAVISO DE RAYOS %.1f s%s  |  DATOS %d por capa" % [
-		Mision.vida_max(id_nave), Mision.maniobra_texto(id_nave), Mision.escudo_inicial(id_nave),
-		Mision.aviso_rayo(id_nave), " + LATERALES" if Mision.avisos_laterales(id_nave) else "",
+	lbl_resumen.text = TranslationServer.translate("RESISTENCIA %d  |  MANIOBRA %s  |  ESCUDO %d\nAVISO DE RAYOS %.1f s%s  |  DATOS %d por capa") % [
+		Mision.vida_max(id_nave), TranslationServer.translate(Mision.maniobra_texto(id_nave)), Mision.escudo_inicial(id_nave),
+		Mision.aviso_rayo(id_nave), TranslationServer.translate(" + LATERALES") if Mision.avisos_laterales(id_nave) else "",
 		Mision.datos_por_capa(id_nave)]
 	_actualizar_botones()
 
@@ -276,13 +276,13 @@ func _actualizar_botones() -> void:
 		var m: Dictionary = Mision.MEJORAS[i]
 		var b: Button = botones_mejora[i]
 		var util: int = min(int(m.puntos), Mision.STAT_MAXIMO - actual)
-		var precio := "$%dM" % int(int(m.costo) / 1_000_000.0)
+		var precio := TranslationServer.translate("$%dM") % int(int(m.costo) / 1_000_000.0)
 		if util <= 0:
-			b.text = "%s  (STAT AL MÁXIMO)" % m.nombre
+			b.text = TranslationServer.translate("%s  (STAT AL MÁXIMO)") % TranslationServer.translate(m.nombre)
 		elif util < int(m.puntos):
-			b.text = "%s  +%d (solo +%d)  %s" % [m.nombre, m.puntos, util, precio]
+			b.text = TranslationServer.translate("%s  +%d (solo +%d)  %s") % [TranslationServer.translate(m.nombre), m.puntos, util, precio]
 		else:
-			b.text = "%s  +%d   %s" % [m.nombre, m.puntos, precio]
+			b.text = TranslationServer.translate("%s  +%d   %s") % [TranslationServer.translate(m.nombre), m.puntos, precio]
 		b.disabled = util <= 0 or int(m.costo) > Mision.presupuesto_restante or saliendo
 	btn_deshacer.disabled = compras.is_empty() or saliendo
 
@@ -301,7 +301,7 @@ func _lanzar() -> void:
 	saliendo = true
 	btn_lanzar.disabled = true
 	_actualizar_botones()
-	decir(["¡La %s está lista! Vamos a la plataforma de lanzamiento." % datos_nave.nombre])
+	decir([TranslationServer.translate("¡La %s está lista! Vamos a la plataforma de lanzamiento.") % datos_nave.nombre])
 	# Bitácora: se desbloquea la entrada de la nave elegida
 	var bitacora = get_node_or_null("/root/Bitacora")
 	if bitacora:
@@ -439,7 +439,7 @@ func _crear_encabezado() -> Control:
 	var der := VBoxContainer.new()
 	der.add_theme_constant_override("separation", 0)
 	fila.add_child(der)
-	var presupuesto := _etiqueta("PRESUPUESTO: %s  |  NAVE: -%s" % [Mision.dinero(Mision.presupuesto), Mision.dinero(int(datos_nave.costo))], 10, C_DORADO)
+	var presupuesto := _etiqueta(TranslationServer.translate("PRESUPUESTO: %s  |  NAVE: -%s") % [Mision.dinero(Mision.presupuesto), Mision.dinero(int(datos_nave.costo))], 10, C_DORADO)
 	presupuesto.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	der.add_child(presupuesto)
 	var costos := HBoxContainer.new()

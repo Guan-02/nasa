@@ -1,7 +1,7 @@
 extends CanvasLayer
 ## MENÚ DE PAUSA (en todas las escenas)
 ## Un botoncito (II) arriba a la izquierda. Al darle clic se pausa el juego y aparece:
-##   CONTINUAR | BITÁCORA | REINICIAR ESCENA | MENÚ PRINCIPAL
+##   CONTINUAR | BITÁCORA | IDIOMA | REINICIAR ESCENA | MENÚ PRINCIPAL
 ## La BITÁCORA abre bitacora_ui.tscn. Necesita el Autoload "Bitacora"
 ## (scripts/bitacora.gd) registrado ANTES que este en la lista de Autoloads.
 ## Se instala UNA sola vez como Autoload (ver instrucciones) y aparece solo
@@ -90,6 +90,7 @@ func _ready() -> void:
 	opcion_bitacora = _opcion("BITÁCORA", _abrir_bitacora)
 	lista.add_child(_opcion("CONTINUAR", _cerrar))
 	lista.add_child(opcion_bitacora)
+	lista.add_child(_opcion("IDIOMA / LANGUAGE", _cambiar_idioma))
 	lista.add_child(_opcion("REINICIAR ESCENA", _reiniciar))
 	lista.add_child(_opcion("MENÚ PRINCIPAL", _ir_al_menu))
 
@@ -219,7 +220,7 @@ func _on_bitacora_cerrada() -> void:
 func _on_entrada_desbloqueada(id: String) -> void:
 	_marcar_novedad(true)
 	var entrada: Dictionary = get_node("/root/Bitacora").obtener_entrada(id)
-	_mostrar_aviso("NUEVA ENTRADA EN LA BITÁCORA:\n" + str(entrada.get("titulo", id)))
+	_mostrar_aviso(TranslationServer.translate("NUEVA ENTRADA EN LA BITÁCORA:") + "\n" + str(entrada.get("titulo", id)))
 
 
 func _marcar_novedad(hay: bool) -> void:
@@ -245,6 +246,7 @@ func _crear_aviso() -> void:
 	aviso_texto.add_theme_font_override("font", fuente)
 	aviso_texto.add_theme_font_size_override("font_size", int(11 * k))
 	aviso_texto.add_theme_color_override("font_color", C_TEXTO)
+	aviso_texto.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	aviso.add_child(aviso_texto)
 	add_child(aviso)
 
@@ -270,6 +272,17 @@ func _ocultar_aviso() -> void:
 		tween_aviso = null
 	if aviso:
 		aviso.hide()
+
+
+## Cambia entre español e inglés sin salir de la partida.
+## Godot vuelve a traducir solo el texto de los botones y las etiquetas.
+func _cambiar_idioma() -> void:
+	var idioma = get_node_or_null("/root/Idioma")
+	if idioma == null:
+		push_warning("MenuPausa: falta el Autoload 'Idioma' (scripts/idioma.gd).")
+		return
+	idioma.alternar()
+	_ocultar_aviso()
 
 
 # ---------- Ocultarlo en el menú principal ----------

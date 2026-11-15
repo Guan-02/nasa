@@ -372,7 +372,7 @@ func _altitud_km() -> float:
 func _actualizar_ui() -> void:
 	# Altitud y progreso del descenso
 	var km: float = _altitud_km()
-	label_altitud.text = "Altitud: %.1f km" % km
+	label_altitud.text = TranslationServer.translate("Altitud: %.1f km") % km
 	var progreso: float = (capsula.position.y - Y_INICIO) / (Y_OCEANO - Y_INICIO) * 100.0
 	barra_altitud.value = clamp(progreso, 0.0, 100.0)
 
@@ -380,7 +380,7 @@ func _actualizar_ui() -> void:
 	var en_reentrada: bool = fase == Fase.REENTRADA
 	label_temperatura.visible = en_reentrada
 	barra_temperatura.visible = en_reentrada
-	label_temperatura.text = "Escudo térmico: %d%%" % roundi(temperatura)
+	label_temperatura.text = TranslationServer.translate("Escudo térmico: %d%%") % roundi(temperatura)
 	barra_temperatura.value = temperatura
 	var color_temp: Color = COLOR_OK
 	if temperatura >= 70.0:
@@ -397,7 +397,7 @@ func _actualizar_ui() -> void:
 		label_paracaidas.text = "Paracaídas: DESPLEGADO"
 		label_paracaidas.modulate = COLOR_OK
 		var flecha: String = "<<<" if viento < 0.0 else ">>>"
-		label_viento.text = "Viento: %s %d km/h" % [flecha, roundi(absf(viento) * VIENTO_A_KMH)]
+		label_viento.text = TranslationServer.translate("Viento: %s %d km/h") % [flecha, roundi(absf(viento) * VIENTO_A_KMH)]
 		label_viento.modulate = COLOR_ALERTA
 	else:
 		label_paracaidas.text = "Paracaídas: SIN DESPLEGAR"
@@ -405,7 +405,7 @@ func _actualizar_ui() -> void:
 		label_viento.text = "Viento: --"
 		label_viento.modulate = Color.WHITE
 
-	label_integridad.text = "Integridad: %d%%" % roundi(_obtener_integridad())
+	label_integridad.text = TranslationServer.translate("Integridad: %d%%") % roundi(_obtener_integridad())
 
 
 # ---------------- SEÑALES (body_entered) ----------------
@@ -453,9 +453,9 @@ func _fallo(texto: String) -> void:
 	_guardar_integridad(nueva_integridad)
 
 	if nueva_integridad <= 0.0:
-		texto += "\n\nNAVE DESTRUIDA\nPresiona R para reiniciar"
+		texto += TranslationServer.translate("\n\nNAVE DESTRUIDA\nPresiona R para reiniciar")
 	else:
-		texto += "\n-%d de integridad\nPresiona R para reintentar" % int(DANO_FALLO)
+		texto += TranslationServer.translate("\n-%d de integridad\nPresiona R para reintentar") % int(DANO_FALLO)
 	_mostrar_mensaje(texto, COLOR_PELIGRO)
 	_actualizar_ui()
 

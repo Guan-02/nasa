@@ -571,7 +571,7 @@ func _crear_hud() -> void:
 	capa_hud.add_child(corazones)
 
 	lbl_maniobra = _etiqueta(13, Color("c9d3ff"))
-	lbl_maniobra.text = "RESISTENCIA %d  |  MANIOBRA %s" % [vida_max, Mision.maniobra_texto(id_nave)]
+	lbl_maniobra.text = TranslationServer.translate("RESISTENCIA %d  |  MANIOBRA %s") % [vida_max, TranslationServer.translate(Mision.maniobra_texto(id_nave))]
 	lbl_maniobra.position = Vector2(18, 70) * k
 	capa_hud.add_child(lbl_maniobra)
 
@@ -613,8 +613,8 @@ func _crear_hud() -> void:
 func _actualizar_hud() -> void:
 	var f := _fraccion_nave()
 	var i := _indice_capa(f)
-	lbl_altitud.text = "ALTITUD: %s km" % _numero(_altitud_km(f))
-	lbl_temp.text = "TEMPERATURA: %d °C" % int(_interpolar(f, "temp"))
+	lbl_altitud.text = TranslationServer.translate("ALTITUD: %s km") % _numero(_altitud_km(f))
+	lbl_temp.text = TranslationServer.translate("TEMPERATURA: %d °C") % int(_interpolar(f, "temp"))
 	if i != capa_actual and estado != "fallo":
 		capa_actual = i
 		lbl_capa.text = CAPAS[i].nombre
@@ -628,7 +628,7 @@ func _actualizar_hud() -> void:
 
 func _numero(km: float) -> String:
 	if km < 100.0:
-		return "%.1f" % km
+		return TranslationServer.translate("%.1f") % km
 	var s := str(int(km))
 	return s.substr(0, s.length() - 3) + "," + s.substr(s.length() - 3) if km >= 1000.0 else s
 
@@ -691,8 +691,8 @@ func _dibujar_altimetro() -> void:
 		var y_texto: float = (y_arriba + y_abajo) * 0.5 + tam * 0.35
 		var w_texto := fuente.get_string_size(c.nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, tam).x
 		var pos := Vector2(x_barra - 8 * k - w_texto, y_texto)
-		altimetro.draw_string_outline(fuente, pos, c.nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, tam, int(4 * k), Color("0b0f24"))
-		altimetro.draw_string(fuente, pos, c.nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, tam, c.color)
+		altimetro.draw_string_outline(fuente, pos, TranslationServer.translate(c.nombre), HORIZONTAL_ALIGNMENT_LEFT, -1, tam, int(4 * k), Color("0b0f24"))
+		altimetro.draw_string(fuente, pos, TranslationServer.translate(c.nombre), HORIZONTAL_ALIGNMENT_LEFT, -1, tam, c.color)
 		desde = c.hasta
 	var y_nave := alto * (1.0 - _fraccion_nave())
 	var punta := Vector2(x_barra - 3 * k, y_nave)
@@ -825,7 +825,7 @@ func _mostrar_resultado(gano: bool) -> void:
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(titulo)
 	var info := _etiqueta(16, Color("f4eefc"))
-	info.text = "Nave: %s\nResistencia restante: %d / %d\nGolpes recibidos: %d\nEscudos recogidos: %d\nAltitud máxima: %s km" % [
+	info.text = TranslationServer.translate("Nave: %s\nResistencia restante: %d / %d\nGolpes recibidos: %d\nEscudos recogidos: %d\nAltitud máxima: %s km") % [
 		datos_nave.nombre, max(vida, 0), vida_max, golpes, escudos, _numero(altitud_max)]
 	v.add_child(info)
 

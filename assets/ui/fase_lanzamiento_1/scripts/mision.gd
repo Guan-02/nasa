@@ -1,4 +1,9 @@
 class_name Mision
+## NOTA SOBRE EL IDIOMA: los textos están escritos en español y el autoload
+## "Idioma" los traduce al inglés. Donde un texto se mete dentro de otro con
+## %s hay que traducirlo a mano con TranslationServer.translate(), porque
+## Godot solo traduce el texto completo de un Label o un Button.
+
 ## Datos compartidos de la misión. No hay que configurar nada:
 ## cualquier script puede usar Mision.nave_elegida, Mision.presupuesto, etc.
 ## Las variables "static" no se borran al cambiar de escena.

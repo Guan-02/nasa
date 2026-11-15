@@ -11,14 +11,19 @@ config_version=5
 [application]
 
 config/name="Space"
-run/main_scene="uid://bwx7qerdjuo3d"
+run/main_scene="res://scenes/idioma.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+Idioma="*res://scripts/idioma.gd"
 Bitacora="*res://scripts/bitacora.gd"
 MenuPausa1="*uid://cmhtb8fi47v5c"
+
+[internationalization]
+
+locale/fallback="es"
 
 [display]
 
