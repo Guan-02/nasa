@@ -1,6 +1,6 @@
 extends Node2D
-## Minijuego de alunizaje 2D estilo Lunar Lander.
-## Todo es LOCAL a esta escena: no necesita ningún Autoload.
+## Aterrizaje_2.0.gd — Minijuego de alunizaje 2D estilo Lunar Lander (escena Aterrizaje_2.0.tscn).
+## Combustible e integridad son LOCALES. El modelo de la nave se lee del Autoload "Mision".
 
 signal mision_completada  # Útil para avanzar a la siguiente escena del juego.
 
@@ -20,6 +20,9 @@ const COLOR_PELIGRO := Color(1.0, 0.35, 0.3)
 # ---------------- REFERENCIAS A NODOS ----------------
 @onready var nave: CharacterBody2D = $Nave
 @onready var cuerpo_nave: ColorRect = $Nave/Cuerpo
+@onready var ventana_nave: ColorRect = $Nave/Ventana
+@onready var sprite_nave: Sprite2D = $Nave/SpriteNave
+@onready var fondo_imagen: TextureRect = $FondoImagen
 @onready var llama: ColorRect = $Nave/Llama
 @onready var zona_segura: Area2D = $Suelo/ZonaSegura
 
@@ -39,15 +42,20 @@ const COLOR_PELIGRO := Color(1.0, 0.35, 0.3)
 var combustible: float = 0.0  # combustible actual del intento
 var integridad: float = 0.0   # integridad actual (se conserva entre intentos)
 
+## Ruta de la imagen de fondo. Cámbiala si guardas la imagen en otra carpeta.
+@export_file("*.jpg", "*.png") var ruta_fondo: String = "res://scenes/Aterrizaje/fondo_luna2.jpg"
+## Altura en píxeles a la que se escala el sprite de la nave.
+@export var alto_sprite_nave: float = 40.0  # igual al alto de la colisión (30x40)
+
 var terminado := false        # true cuando ya se aterrizó o se estrelló
 var posicion_inicial := Vector2.ZERO
-var color_nave_original := Color.WHITE
 
 
 func _ready() -> void:
 	posicion_inicial = nave.position
-	color_nave_original = cuerpo_nave.color
 	integridad = integridad_maxima
+	_cargar_fondo()
+	_cargar_modelo_nave()
 	barra_combustible.max_value = max(combustible_maximo, 1.0)
 	barra_velocidad.max_value = VEL_MAX_BARRA
 	_reiniciar_intento()
@@ -58,11 +66,43 @@ func _reiniciar_intento() -> void:
 	combustible = combustible_maximo
 	nave.position = posicion_inicial
 	nave.velocity = Vector2.ZERO
-	cuerpo_nave.color = color_nave_original
+	nave.modulate = Color.WHITE  # quita el tinte rojo del choque
 	llama.visible = false
 	mensaje.visible = false
 	terminado = false
 	_actualizar_ui()
+
+
+# ---------------- APARIENCIA ----------------
+
+func _cargar_fondo() -> void:
+	if ruta_fondo != "" and ResourceLoader.exists(ruta_fondo):
+		fondo_imagen.texture = load(ruta_fondo)
+	else:
+		push_warning("No se encontró la imagen de fondo: %s (se usa el color liso)" % ruta_fondo)
+
+
+func _cargar_modelo_nave() -> void:
+	# Lee el modelo elegido desde el Autoload "Mision".
+	var datos: Dictionary = Mision.datos_nave()
+	if not datos.has("capsula_img"):
+		return
+	var ruta: String = str(datos["capsula_img"])
+	if not ResourceLoader.exists(ruta):
+		push_warning("No se encontró la imagen de la nave: %s" % ruta)
+		return
+
+	var textura: Texture2D = load(ruta)
+	sprite_nave.texture = textura
+	sprite_nave.visible = true
+	# Escalar el sprite para que mida 'alto_sprite_nave' px de alto, sin deformarlo
+	var alto_textura: float = float(textura.get_height())
+	if alto_textura > 0.0:
+		var escala: float = alto_sprite_nave / alto_textura
+		sprite_nave.scale = Vector2(escala, escala)
+	# Oculta los cuadros de color placeholder
+	cuerpo_nave.visible = false
+	ventana_nave.visible = false
 
 
 func _physics_process(delta: float) -> void:
@@ -165,7 +205,7 @@ func _victoria() -> void:
 
 func _fallo(texto: String) -> void:
 	_detener_nave()
-	cuerpo_nave.color = COLOR_PELIGRO
+	nave.modulate = COLOR_PELIGRO  # tiñe de rojo la nave (sprite o placeholder)
 	integridad = max(integridad - DANO_IMPACTO, 0.0)
 
 	if integridad <= 0.0:
