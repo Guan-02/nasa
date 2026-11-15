@@ -5,11 +5,11 @@ extends Node2D
 signal mision_completada  # Útil para avanzar a la siguiente escena del juego.
 
 # ---------------- AJUSTES DE JUGABILIDAD ----------------
-const GRAVEDAD_LUNAR := 60.0          # px/s² hacia abajo (suave)
+const GRAVEDAD_LUNAR := 50.0          # px/s² hacia abajo (suave)
 const EMPUJE_PROPULSOR := 150.0       # px/s² hacia arriba (debe ser > gravedad)
 const VELOCIDAD_LATERAL := 140.0      # px/s máximos en X
 const ACELERACION_LATERAL := 300.0    # qué tan rápido responde en X
-const CONSUMO_COMBUSTIBLE := 12.0     # unidades de combustible por segundo
+const CONSUMO_COMBUSTIBLE := 24.0     # unidades de combustible por segundo
 const VELOCIDAD_MAX_SEGURA := 60.0    # px/s: más que esto = impacto brusco
 const DANO_IMPACTO := 25.0            # se resta a la integridad en cada choque
 const VEL_MAX_BARRA := 300.0          # tope visual de la barra de velocidad
