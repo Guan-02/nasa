@@ -6,7 +6,7 @@ PANTALLAS NUEVAS: INTRO + SELECCIÓN DE NAVE
    de tu proyecto (donde está project.godot). Solo se AGREGAN archivos nuevos,
    no se reemplaza nada de lo que ya tenían.
 3. Abre Godot. En scripts/menu_principal.gd cambia la línea 7 por:
-       const ESCENA_JUEGO := "res://scenes/intro.tscn"
+	   const ESCENA_JUEGO := "res://scenes/intro.tscn"
 4. Corre el menú y dale a "Jugar".
 
 Archivos nuevos:
