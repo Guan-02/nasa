@@ -1,14 +1,20 @@
 extends CanvasLayer
 ## MENÚ DE PAUSA (en todas las escenas)
 ## Un botoncito (II) arriba a la izquierda. Al darle clic se pausa el juego y aparece:
-##   CONTINUAR | REINICIAR ESCENA | MENÚ PRINCIPAL
+##   CONTINUAR | BITÁCORA | REINICIAR ESCENA | MENÚ PRINCIPAL
+## La BITÁCORA abre bitacora_ui.tscn. Necesita el Autoload "Bitacora"
+## (scripts/bitacora.gd) registrado ANTES que este en la lista de Autoloads.
 ## Se instala UNA sola vez como Autoload (ver instrucciones) y aparece solo
 ## en todas las escenas, menos en el menú principal.
 
 # ---------- Cosas que puedes cambiar fácilmente ----------
 const ESCENA_MENU := "res://scenes/menu_principal.tscn"
 const RUTA_FUENTE := "res://fuentes/pixel.ttf"
+const ESCENA_BITACORA := "res://scenes/bitacora_ui.tscn"
 const POSICION := Vector2(6, 6)        # dónde va el botón (pantalla de 648 de alto)
+# Cuánto dura en pantalla el aviso de "nueva entrada en la bitácora".
+# Pon 0.0 para que se quede hasta que el jugador abra el menú de pausa.
+const SEGUNDOS_AVISO := 6.0
 const TAMANO := Vector2(30, 26)        # tamaño del botón
 # ---------------------------------------------------------
 
@@ -17,6 +23,7 @@ const C_BORDE := Color("6a76a8")
 const C_HOVER := Color("3a2a66")
 const C_BORDE_HOVER := Color("f2c6e0")
 const C_TEXTO := Color("f4eefc")
+const C_DORADO := Color("f5c542")
 
 var k := 1.0
 var fuente: Font
@@ -25,6 +32,13 @@ var fondo: ColorRect
 var panel: PanelContainer
 var abierto := false
 var escena_actual: Node = null
+
+# Bitácora
+var bitacora_ui = null                 # instancia de bitacora_ui.tscn (sin tipo: usa funciones propias)
+var opcion_bitacora: Button
+var aviso: PanelContainer              # cartelito "Nueva entrada en la bitácora"
+var aviso_texto: Label
+var tween_aviso: Tween
 
 
 func _ready() -> void:
@@ -73,10 +87,14 @@ func _ready() -> void:
 	var lista := VBoxContainer.new()
 	lista.add_theme_constant_override("separation", int(4 * k))
 	panel.add_child(lista)
+	opcion_bitacora = _opcion("BITÁCORA", _abrir_bitacora)
 	lista.add_child(_opcion("CONTINUAR", _cerrar))
+	lista.add_child(opcion_bitacora)
 	lista.add_child(_opcion("REINICIAR ESCENA", _reiniciar))
 	lista.add_child(_opcion("MENÚ PRINCIPAL", _ir_al_menu))
 
+	_crear_aviso()
+	_preparar_bitacora()
 	_revisar_escena()
 
 
@@ -116,6 +134,7 @@ func _alternar() -> void:
 
 func _abrir() -> void:
 	abierto = true
+	_ocultar_aviso()   # ya vio el aviso: se quita el cartelito
 	panel.visible = true
 	fondo.visible = true
 	get_tree().paused = true
@@ -123,6 +142,8 @@ func _abrir() -> void:
 
 func _cerrar() -> void:
 	abierto = false
+	if bitacora_ui and bitacora_ui.esta_abierta():
+		bitacora_ui.cerrar()
 	panel.visible = false
 	fondo.visible = false
 	get_tree().paused = false
@@ -144,6 +165,111 @@ func _ir_al_menu() -> void:
 		get_tree().change_scene_to_file(ESCENA_MENU)
 	else:
 		push_warning("No existe " + ESCENA_MENU)
+
+
+# ---------- Bitácora ----------
+
+func _preparar_bitacora() -> void:
+	var datos = get_node_or_null("/root/Bitacora")
+	if datos == null:
+		push_warning("MenuPausa: falta el Autoload 'Bitacora' (scripts/bitacora.gd).")
+		opcion_bitacora.disabled = true
+		return
+	if not ResourceLoader.exists(ESCENA_BITACORA):
+		push_warning("MenuPausa: no existe " + ESCENA_BITACORA)
+		opcion_bitacora.disabled = true
+		return
+
+	datos.entrada_desbloqueada.connect(_on_entrada_desbloqueada)
+
+	bitacora_ui = load(ESCENA_BITACORA).instantiate()
+	bitacora_ui.mostrar_boton_hud = false     # aquí se abre desde el menú, no con su botón
+	bitacora_ui.layer = layer + 10            # encima del menú de pausa
+	bitacora_ui.cerrado.connect(_on_bitacora_cerrada)
+	add_child(bitacora_ui)
+
+	# Mismo estilo que el menú de pausa
+	var marco := StyleBoxFlat.new()
+	marco.bg_color = C_FONDO
+	marco.border_color = C_BORDE
+	marco.set_border_width_all(max(1, int(2 * k)))
+	marco.set_content_margin_all(int(6 * k))
+	var panel_diario: Control = bitacora_ui.get_node_or_null("Ventana/Centro/Panel")
+	if panel_diario:
+		panel_diario.add_theme_stylebox_override("panel", marco)
+
+
+func _abrir_bitacora() -> void:
+	if bitacora_ui == null:
+		return
+	# El juego sigue en pausa; solo escondemos el menú mientras se lee el diario.
+	panel.visible = false
+	fondo.visible = false
+	_marcar_novedad(false)
+	bitacora_ui.abrir()
+
+
+func _on_bitacora_cerrada() -> void:
+	# Al cerrar el diario (X o Esc) se vuelve al menú de pausa.
+	if abierto:
+		panel.visible = true
+		fondo.visible = true
+
+
+func _on_entrada_desbloqueada(id: String) -> void:
+	_marcar_novedad(true)
+	var entrada: Dictionary = get_node("/root/Bitacora").obtener_entrada(id)
+	_mostrar_aviso("NUEVA ENTRADA EN LA BITÁCORA:\n" + str(entrada.get("titulo", id)))
+
+
+func _marcar_novedad(hay: bool) -> void:
+	opcion_bitacora.text = "BITÁCORA  (!)" if hay else "BITÁCORA"
+	var color := C_DORADO if hay else C_TEXTO
+	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
+		boton.add_theme_color_override(c, color)
+		opcion_bitacora.add_theme_color_override(c, color)
+
+
+func _crear_aviso() -> void:
+	aviso = PanelContainer.new()
+	var estilo := StyleBoxFlat.new()
+	estilo.bg_color = C_FONDO
+	estilo.border_color = C_DORADO
+	estilo.set_border_width_all(max(1, int(2 * k)))
+	estilo.set_content_margin_all(int(6 * k))
+	aviso.add_theme_stylebox_override("panel", estilo)
+	aviso.position = (POSICION + Vector2(TAMANO.x + 8, 0)) * k
+	aviso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	aviso.visible = false
+	aviso_texto = Label.new()
+	aviso_texto.add_theme_font_override("font", fuente)
+	aviso_texto.add_theme_font_size_override("font_size", int(11 * k))
+	aviso_texto.add_theme_color_override("font_color", C_TEXTO)
+	aviso.add_child(aviso_texto)
+	add_child(aviso)
+
+
+func _mostrar_aviso(texto: String) -> void:
+	aviso_texto.text = texto
+	aviso.modulate.a = 1.0
+	aviso.visible = true
+	if tween_aviso:
+		tween_aviso.kill()
+		tween_aviso = null
+	if SEGUNDOS_AVISO <= 0.0:
+		return   # se queda hasta que se abra el menú de pausa
+	tween_aviso = create_tween()
+	tween_aviso.tween_interval(SEGUNDOS_AVISO)
+	tween_aviso.tween_property(aviso, "modulate:a", 0.0, 0.8)
+	tween_aviso.tween_callback(aviso.hide)
+
+
+func _ocultar_aviso() -> void:
+	if tween_aviso:
+		tween_aviso.kill()
+		tween_aviso = null
+	if aviso:
+		aviso.hide()
 
 
 # ---------- Ocultarlo en el menú principal ----------

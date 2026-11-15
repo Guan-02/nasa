@@ -8,13 +8,16 @@ extends Control
 ##
 ## Eventos: entre 3 y 5 al azar (asteroides, oxígeno o eléctrico), repartidos
 ## en bloques de tiempo iguales y sin repetir el mismo dos veces seguidas.
+## Al final del viaje SIEMPRE llega una tormenta solar (escena con Albertsahur
+## y el refugio). Al pasar, se desbloquea "Solar Flares" en la bitácora.
 ## Los minijuegos están dentro de este mismo archivo (clases MinijuegoAsteroides
 ## MinijuegoOxigeno y MinijuegoElectrico, hasta abajo), así que no necesitan ningún otro script.
 
 # ---------- Cosas que puedes cambiar fácilmente ----------
 const CABINA := "res://assets/viaje/cabina.jpg"
 const CABINA_ASTRONAUTA := "res://assets/viaje/cabina_astronauta.jpg"
-const REFUGIO := "res://assets/viaje/refugio.jpg"
+const REFUGIO := "res://assets/viaje/refugio_limpio.jpg"        # 3 cuadros: salir del refugio (sin letreros)
+const ESCONDERSE := "res://assets/viaje/esconderse_limpio.jpg"  # 3 cuadros: esconderse en el refugio (sin letreros)
 const RUTA_FUENTE := "res://fuentes/pixel.ttf"
 const ESCENA_SIGUIENTE := "res://scenes/orbita.tscn"
 const ESCENA_TALLER := "res://scenes/taller.tscn"
@@ -28,6 +31,23 @@ const PUNTOS_POR_FALLA := 300
 const EVENTOS_DISPONIBLES := ["asteroides", "oxigeno", "electrico"]
 const EVENTOS_MIN := 5
 const EVENTOS_MAX := 5
+
+# Tormenta solar fija: llega siempre poco antes de llegar a la Luna
+const MOMENTO_TORMENTA := 0.93    # 93 % del viaje (después de todas las fallas)
+const LINEAS_TORMENTA := [
+	"¡Director, alerta del control de misión! El Sol acaba de lanzar una llamarada solar clase X, de las más fuertes que existen.",
+	"Detrás viene una eyección de masa coronal: una nube gigante de partículas cargadas que va directo hacia nosotros.",
+	"Esa radiación daña la electrónica y a la tripulación. ¡Todos al refugio, la zona con más blindaje de la nave! Cerrando escotillas...",
+]
+const LINEAS_ESCONDIDOS := [
+	"Apagamos todo lo que no es indispensable y nos quedamos a oscuras, bien pegados al blindaje.",
+	"Shhh... Ahora solo queda esperar a que pase la radiación.",
+]
+const LINEAS_ALIVIO := [
+	"...Uf. Los sensores de radiación ya bajaron. La tormenta pasó.",
+	"Salimos del refugio, revisamos los sistemas y todo sigue en orden. ¡Ya casi llegamos a la Luna!",
+	"Lo anoté en la bitácora, director. Ábrela en el menú de pausa para saber más de las llamaradas solares.",
+]
 
 const INTRO := [
 	"Ya vamos rumbo a la Luna, director. Son unos 3 días de viaje, casi todo con los motores apagados.",
@@ -120,6 +140,7 @@ var total_fallas := 0
 var dia := 1
 var temblor := 0.0
 var glitch := 0.0
+var tormenta_hecha := false
 
 var cabina: Control
 var hud: Control
@@ -322,6 +343,8 @@ func _process(delta: float) -> void:
 			var tipo: String = eventos[indice_evento][1]
 			indice_evento += 1
 			_alerta(tipo)
+		elif not tormenta_hecha and progreso >= MOMENTO_TORMENTA:
+			_tormenta_solar()
 		elif progreso >= 1.0:
 			_llegar()
 	elif estado == "minijuego" and _minijuego_actual() == "":
@@ -393,6 +416,10 @@ func _fin_minijuego(exito: bool, tipo: String) -> void:
 				_fallar("El casco no aguantó los impactos.")
 				return
 		"tormenta":
+			# Bitácora: sobrevivimos (o sufrimos) la tormenta solar
+			var bitacora = get_node_or_null("/root/Bitacora")
+			if bitacora:
+				bitacora.desbloquear_entrada("solar_flares")
 			if not exito:
 				datos *= 0.7
 				glitch = 2.5
@@ -423,7 +450,7 @@ func _fin_minijuego(exito: bool, tipo: String) -> void:
 
 	if tipo == "tormenta" and exito:
 		estado = "escena"
-		get_tree().create_timer(1.5).timeout.connect(_escena_refugio)
+		get_tree().create_timer(1.5).timeout.connect(_entrar_al_refugio)
 	else:
 		estado = "pausa"
 		get_tree().create_timer(2.0).timeout.connect(_reanudar)
@@ -434,10 +461,46 @@ func _reanudar() -> void:
 		estado = "viajando"
 
 
-## Después de la tormenta: los 3 cuadros de "salir del refugio"
-func _escena_refugio() -> void:
+## Tormenta solar fija antes de llegar: aviso + Albertsahur + refugio + alivio
+func _tormenta_solar() -> void:
+	tormenta_hecha = true
+	estado = "alerta"          # el marco rojo pulsa mientras explica
+	sacudir(0.8)
+	glitch = 2.0
+	_texto_centro("¡TORMENTA SOLAR!", Color("ffb37a"))
+	decir(LINEAS_TORMENTA, _entrar_al_refugio)
+
+
+func _entrar_al_refugio() -> void:
 	if estado == "fallo":
 		return
+	estado = "escena"
+	glitch = 1.5
+	sacudir(0.5)
+	# 1) Esconderse: los 3 cuadros se van oscureciendo (se queda en negro al final)
+	var capa_esconderse := _escena_paneles(ESCONDERSE, true, false)
+	decir(LINEAS_ESCONDIDOS, _salir_del_refugio.bind(capa_esconderse))
+
+
+## 2) Salir del refugio: los 3 cuadros de vuelta a la normalidad + alivio
+func _salir_del_refugio(capa_anterior: CanvasLayer) -> void:
+	if estado == "fallo":
+		return
+	_escena_paneles(REFUGIO, false, true)
+	if is_instance_valid(capa_anterior):
+		capa_anterior.queue_free()
+	# Bitácora: ya vivimos una tormenta solar
+	var bitacora = get_node_or_null("/root/Bitacora")
+	if bitacora:
+		bitacora.desbloquear_entrada("solar_flares")
+	# Se sigue viajando cuando Albertsahur termina de hablar
+	decir(LINEAS_ALIVIO, _reanudar_despues_de_escena)
+
+
+## Muestra una imagen de 3 cuadros y los va descubriendo uno por uno.
+## entrar_con_fade: aparece desde la cabina (si es false, empieza ya en negro).
+## salir_con_fade: al final se desvanece y se borra (si es false, se queda en pantalla).
+func _escena_paneles(ruta: String, entrar_con_fade: bool, salir_con_fade: bool) -> CanvasLayer:
 	var capa := CanvasLayer.new()
 	capa.layer = 8
 	add_child(capa)
@@ -445,7 +508,7 @@ func _escena_refugio() -> void:
 	fondo.color = Color.BLACK
 	fondo.size = pantalla
 	capa.add_child(fondo)
-	var tex := _cargar(REFUGIO)
+	var tex := _cargar(ruta)
 	var esc: float = min(pantalla.x / tex.get_size().x, pantalla.y / tex.get_size().y)
 	var tam := tex.get_size() * esc
 	var pos := (pantalla - tam) * 0.5
@@ -458,8 +521,9 @@ func _escena_refugio() -> void:
 	fondo.add_child(foto)
 	# Tapas negras que se van quitando cuadro por cuadro
 	var t := create_tween()
-	fondo.modulate.a = 0.0
-	t.tween_property(fondo, "modulate:a", 1.0, 0.6)
+	if entrar_con_fade:
+		fondo.modulate.a = 0.0
+		t.tween_property(fondo, "modulate:a", 1.0, 0.6)
 	for i in 3:
 		var tapa := ColorRect.new()
 		tapa.color = Color.BLACK
@@ -468,11 +532,11 @@ func _escena_refugio() -> void:
 		fondo.add_child(tapa)
 		t.tween_property(tapa, "modulate:a", 0.0, 0.8)
 		t.tween_interval(0.8)
-	t.tween_interval(2.0)
-	t.tween_property(fondo, "modulate:a", 0.0, 0.8)
-	t.tween_callback(capa.queue_free)
-	t.tween_callback(_reanudar_despues_de_escena)
-	decir(["La tormenta pasó. Salimos del refugio, revisamos los sistemas y volvemos a nuestros puestos."])
+	if salir_con_fade:
+		t.tween_interval(2.0)
+		t.tween_property(fondo, "modulate:a", 0.0, 0.8)
+		t.tween_callback(capa.queue_free)
+	return capa
 
 
 func _reanudar_despues_de_escena() -> void:

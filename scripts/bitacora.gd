@@ -24,6 +24,13 @@ const RUTA_DATOS := "res://data/bitacora_entradas.json"
 ## Archivo con el progreso del jugador (se escribe en la carpeta de usuario).
 const RUTA_PROGRESO := "user://bitacora_progreso.json"
 
+## Relación entre el id de nave de Mision ("apollo11") y su entrada en la bitácora.
+const ENTRADA_POR_NAVE := {
+	"apollo11": "apollo_11",
+	"artemis2": "artemis_2",
+	"gemini4": "gemini_4",
+}
+
 ## Lista ordenada de entradas. Cada una es un Dictionary con:
 ## id, titulo, subtitulo_o_fecha, texto, ruta_imagen, desbloqueada
 var _entradas: Array[Dictionary] = []
@@ -54,6 +61,15 @@ func desbloquear_entrada(id: String, notificar: bool = true) -> bool:
 	if notificar:
 		entrada_desbloqueada.emit(id)
 	return true
+
+
+## Desbloquea la entrada de la nave elegida, usando los ids de Mision
+## ("apollo11", "artemis2", "gemini4").
+func desbloquear_nave(id_nave: String) -> bool:
+	if not ENTRADA_POR_NAVE.has(id_nave):
+		push_warning("Bitacora: la nave '%s' no tiene entrada en la bitácora." % id_nave)
+		return false
+	return desbloquear_entrada(ENTRADA_POR_NAVE[id_nave])
 
 
 ## Devuelve true si la entrada existe y está desbloqueada.
@@ -138,6 +154,9 @@ func _cargar_datos() -> void:
 			"subtitulo_o_fecha": str(item.get("subtitulo_o_fecha", "")),
 			"texto": str(item.get("texto", "")),
 			"ruta_imagen": str(item.get("ruta_imagen", "")),
+			# Opcional: si la imagen es una hoja de cuadros (spritesheet) animada
+			# {"columnas": 11, "filas": 8, "frames": 88, "fps": 12.5}
+			"animacion": item.get("animacion") if item.get("animacion") is Dictionary else {},
 			"desbloqueada": item.get("desbloqueada", false) == true,
 		}
 		_indice_por_id[id] = _entradas.size()

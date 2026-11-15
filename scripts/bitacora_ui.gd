@@ -9,6 +9,11 @@ extends CanvasLayer
 ## =====================================================================
 
 ## Si es true, el juego se pausa (get_tree().paused) mientras el diario está abierto.
+## Se emite al cerrar la ventana (el menú de pausa lo usa para volver a mostrarse).
+signal cerrado
+
+## Si es false, se oculta el botón "Diario" propio (cuando lo abre el menú de pausa).
+@export var mostrar_boton_hud: bool = true
 @export var pausar_juego: bool = true
 ## Acción opcional del InputMap para abrir/cerrar el diario con teclado (ej. tecla J).
 ## Si no existe en el InputMap, simplemente se ignora.
@@ -26,7 +31,7 @@ extends CanvasLayer
 @onready var lista_entradas: VBoxContainer = %ListaEntradas
 @onready var imagen: TextureRect = %Imagen
 @onready var titulo_entrada: Label = %TituloEntrada
-@onready var subtitulo: Label = %Subtitulo
+@onready var subtitulo: RichTextLabel = %Subtitulo
 @onready var texto: RichTextLabel = %Texto
 @onready var boton_anterior: Button = %BotonAnterior
 @onready var boton_siguiente: Button = %BotonSiguiente
@@ -38,12 +43,22 @@ var _grupo_botones := ButtonGroup.new()
 var _pausa_previa: bool = false        # Para no "despausar" un juego que ya estaba en pausa
 var _texto_boton_hud: String = ""
 
+# Animación por hoja de cuadros (para imágenes animadas como la de Solar Flares)
+var _anim_atlas: AtlasTexture = null
+var _anim_columnas: int = 1
+var _anim_frames: int = 1
+var _anim_fps: float = 12.0
+var _anim_tamano := Vector2.ZERO
+var _anim_frame: int = 0
+var _anim_tiempo: float = 0.0
+
 
 func _ready() -> void:
 	# Este nodo (y sus hijos, que heredan) sigue funcionando con el juego en pausa.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	ventana.hide()
 	_texto_boton_hud = boton_diario.text
+	boton_diario.visible = mostrar_boton_hud
 
 	# Ajustes clave también por código, por si se olvidan en el Inspector.
 	imagen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -51,6 +66,7 @@ func _ready() -> void:
 	texto.bbcode_enabled = true
 	texto.scroll_active = true
 	texto.fit_content = false
+	subtitulo.bbcode_enabled = true
 	scroll_lista.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	boton_diario.focus_mode = Control.FOCUS_NONE  # Evita que Espacio/Enter lo active al jugar
 
@@ -110,12 +126,17 @@ func abrir() -> void:
 		boton_cerrar.grab_focus()
 
 
+func esta_abierta() -> bool:
+	return ventana.visible
+
+
 func cerrar() -> void:
 	if not ventana.visible:
 		return
 	ventana.hide()
 	if pausar_juego:
 		get_tree().paused = _pausa_previa
+	cerrado.emit()
 
 
 # ---------------------------------------------------------------------
@@ -171,10 +192,10 @@ func mostrar_entrada(id: String) -> void:
 	_id_seleccionado = id
 
 	titulo_entrada.text = entrada["titulo"]
-	subtitulo.text = entrada["subtitulo_o_fecha"]
+	subtitulo.text = "[i]%s[/i]" % entrada["subtitulo_o_fecha"]
 	texto.text = entrada["texto"]  # Con bbcode_enabled, el BBCode se interpreta
 	texto.scroll_to_line(0)
-	imagen.texture = _cargar_textura(entrada["ruta_imagen"])
+	_poner_imagen(_cargar_textura(entrada["ruta_imagen"]), entrada.get("animacion", {}))
 
 	if _botones.has(id):
 		var boton: Button = _botones[id]
@@ -189,8 +210,47 @@ func _mostrar_vacio() -> void:
 	titulo_entrada.text = "Sin entradas todavía"
 	subtitulo.text = ""
 	texto.text = "[i]Completa misiones para descubrir nuevas entradas de la bitácora.[/i]"
-	imagen.texture = textura_respaldo
+	_poner_imagen(textura_respaldo, {})
 	_actualizar_navegacion()
+
+
+## Muestra una imagen fija o, si "animacion" trae datos, la anima recorriendo
+## los cuadros de una hoja (spritesheet). Godot no reproduce GIF directamente.
+func _poner_imagen(textura: Texture2D, animacion: Dictionary) -> void:
+	_anim_atlas = null
+	if textura == null or animacion.is_empty():
+		imagen.texture = textura
+		return
+	_anim_columnas = maxi(1, int(animacion.get("columnas", 1)))
+	var filas := maxi(1, int(animacion.get("filas", 1)))
+	_anim_frames = clampi(int(animacion.get("frames", _anim_columnas * filas)), 1, _anim_columnas * filas)
+	_anim_fps = maxf(1.0, float(animacion.get("fps", 12.0)))
+	_anim_tamano = Vector2(textura.get_width() / float(_anim_columnas), textura.get_height() / float(filas))
+	_anim_atlas = AtlasTexture.new()
+	_anim_atlas.atlas = textura
+	_anim_atlas.filter_clip = true  # evita que se "cuele" el borde del cuadro vecino
+	_anim_frame = 0
+	_anim_tiempo = 0.0
+	_mostrar_cuadro()
+	imagen.texture = _anim_atlas
+
+
+func _process(delta: float) -> void:
+	if _anim_atlas == null or not ventana.visible:
+		return
+	_anim_tiempo += delta
+	var duracion := 1.0 / _anim_fps
+	if _anim_tiempo >= duracion:
+		var avance := floori(_anim_tiempo / duracion)
+		_anim_tiempo -= avance * duracion
+		_anim_frame = (_anim_frame + avance) % _anim_frames
+		_mostrar_cuadro()
+
+
+func _mostrar_cuadro() -> void:
+	var columna := _anim_frame % _anim_columnas
+	var fila := floori(float(_anim_frame) / _anim_columnas)
+	_anim_atlas.region = Rect2(Vector2(columna, fila) * _anim_tamano, _anim_tamano)
 
 
 func _cargar_textura(ruta: String) -> Texture2D:

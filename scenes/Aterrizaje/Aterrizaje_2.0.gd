@@ -200,6 +200,10 @@ func _victoria() -> void:
 
 	_mostrar_mensaje("¡Alunizaje exitoso!\nCombustible restante: %d" % ceili(combustible), COLOR_OK)
 	_actualizar_ui()
+	# Bitácora: alunizaje exitoso
+	var bitacora = get_node_or_null("/root/Bitacora")
+	if bitacora:
+		bitacora.desbloquear_entrada("lunar_craters")
 	mision_completada.emit()
 
 

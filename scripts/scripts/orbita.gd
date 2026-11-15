@@ -432,6 +432,9 @@ func _bezier(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
 func _llegar_a_la_luna() -> void:
 	angulo = PI
 	lbl_velocidad.text = "DISTANCIA A LA LUNA: 0 km"
+	# Bitácora: las naves que no bajan a la superficie la desbloquean al llegar
+	if id_nave != "apollo11":
+		_desbloquear_luna()
 	if id_nave == "artemis2":
 		estado = "sobrevuelo"
 		lbl_titulo.text = "SOBREVUELO LUNAR"
@@ -504,8 +507,15 @@ func _alunizar(destino: Vector2) -> void:
 	temblor = 0.4
 	lbl_titulo.text = "¡ALUNIZAJE!"
 	_texto_centro("¡EL ÁGUILA HA ALUNIZADO!", Color("f5c542"))
+	_desbloquear_luna()   # Bitácora: alunizaje del Apollo 11
 	decir(LINEAS_ALUNIZAJE)
 	get_tree().create_timer(12.0).timeout.connect(_terminar)
+
+
+func _desbloquear_luna() -> void:
+	var bitacora = get_node_or_null("/root/Bitacora")
+	if bitacora:
+		bitacora.desbloquear_entrada("lunar_craters")
 
 
 func _terminar() -> void:

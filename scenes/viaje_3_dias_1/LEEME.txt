@@ -23,7 +23,7 @@ QUÉ FALLAS LE TOCAN A CADA NAVE (en viaje.gd, FALLAS):
   GEMINI IV : válvulas x3 (rápidas), asteroides (con 0.2 s de retraso), tormenta, antena
   APOLLO 11 : antena, válvulas, asteroides, tormenta, alarma 1202
   ARTEMIS II: antena, asteroides (radar ve 2 casillas antes), 1202 con nombres revueltos,
-              tormenta y, a veces (40%), las 3 válvulas fallan juntas
+			  tormenta y, a veces (40%), las 3 válvulas fallan juntas
 
 LO QUE HACEN LAS MEJORAS DEL TALLER EN EL VIAJE:
   PROPULSIÓN     -> más combustible inicial (para esquivar asteroides)

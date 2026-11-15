@@ -302,6 +302,10 @@ func _lanzar() -> void:
 	btn_lanzar.disabled = true
 	_actualizar_botones()
 	decir(["¡La %s está lista! Vamos a la plataforma de lanzamiento." % datos_nave.nombre])
+	# Bitácora: se desbloquea la entrada de la nave elegida
+	var bitacora = get_node_or_null("/root/Bitacora")
+	if bitacora:
+		bitacora.desbloquear_nave(id_nave)
 	# Se va solo después de un momento (no hace falta dar clic)
 	get_tree().create_timer(2.5).timeout.connect(_ir_siguiente)
 

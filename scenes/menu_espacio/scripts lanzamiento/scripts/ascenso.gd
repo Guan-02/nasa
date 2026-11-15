@@ -490,6 +490,10 @@ func _recoger_escudo(ob: Dictionary) -> void:
 func _exito() -> void:
 	estado = "exito"
 	_texto_centro("¡EXOSFERA ALCANZADA!", Color("f5c542"), 1.5)
+	# Bitácora: atravesamos la atmósfera
+	var bitacora = get_node_or_null("/root/Bitacora")
+	if bitacora:
+		bitacora.desbloquear_entrada("earth_atmosphere")
 	decir(DIALOGOS.exito)
 	get_tree().create_timer(2.0).timeout.connect(_cambiar_escena)
 
