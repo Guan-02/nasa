@@ -3,7 +3,7 @@
 		{
 			"id": "apollo_11",
 			"titulo": "Apolo 11",
-			"subtitulo_o_fecha": "Julio de 1969",
+			"subtitulo_o_fecha": "The Eagle has landed…",
 			"texto": "El 16 de julio de 1969 despegó desde el Centro Espacial Kennedy a bordo del cohete [b]Saturno V[/b]. El 20 de julio, el módulo lunar [b]Eagle[/b] alunizó en el [i]Mar de la Tranquilidad[/i] con Neil Armstrong y Buzz Aldrin, mientras Michael Collins permanecía en órbita en el módulo de mando [b]Columbia[/b]. Armstrong se convirtió en el primer ser humano en pisar la Luna. Durante unas dos horas y media de caminata recogieron cerca de [color=#8fd3ff]21.5 kg de rocas y polvo lunar[/color] y dejaron instrumentos científicos, entre ellos un retrorreflector láser que todavía se usa para medir con precisión la distancia entre la Tierra y la Luna.",
 			"ruta_imagen": "res://assets/bitacora/apollo_11.jpg",
 			"desbloqueada": true
