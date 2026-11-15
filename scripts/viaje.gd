@@ -6,9 +6,10 @@ extends Control
 ## Albertsahur explica todo abajo a la izquierda.
 ## Al terminar, se regresa a la escena de la órbita para llegar a la Luna.
 ##
-## POR AHORA solo hay un evento: la evasión de asteroides. El minijuego está
-## dentro de este mismo archivo (clase MinijuegoAsteroides, hasta abajo),
-## así que no necesita ningún otro script.
+## Eventos: entre 3 y 5 al azar (asteroides, oxígeno o eléctrico), repartidos
+## en bloques de tiempo iguales y sin repetir el mismo dos veces seguidas.
+## Los minijuegos están dentro de este mismo archivo (clases MinijuegoAsteroides
+## MinijuegoOxigeno y MinijuegoElectrico, hasta abajo), así que no necesitan ningún otro script.
 
 # ---------- Cosas que puedes cambiar fácilmente ----------
 const CABINA := "res://assets/viaje/cabina.jpg"
@@ -18,23 +19,15 @@ const RUTA_FUENTE := "res://fuentes/pixel.ttf"
 const ESCENA_SIGUIENTE := "res://scenes/orbita.tscn"
 const ESCENA_TALLER := "res://scenes/taller.tscn"
 const ESCENA_MENU := "res://scenes/menu_principal.tscn"
-const DURACION_VIAJE := 150.0      # segundos de viaje (sin contar las fallas)
+const DURACION_VIAJE := 80.0      # segundos de viaje sin contar las fallas
 const PUNTOS_POR_FALLA := 300
 
-# Fallas de cada nave: [en qué parte del viaje (0 a 1), cuál minijuego]
-# POR AHORA solo está activo el de asteroides. Cuando estén listos los demás,
-# borra esta lista y quita el "#" de la lista completa de abajo.
-const FALLAS := {
-	"gemini4": [[0.25, "asteroides"]],
-	"apollo11": [[0.25, "asteroides"]],
-	"artemis2": [[0.25, "asteroides"]],
-}
-#const FALLAS := {
-#	"gemini4": [[0.10, "valvulas"], [0.24, "asteroides"], [0.40, "valvulas"], [0.55, "tormenta"], [0.72, "antena"], [0.86, "valvulas"]],
-#	"apollo11": [[0.12, "antena"], [0.28, "valvulas"], [0.45, "asteroides"], [0.62, "tormenta"], [0.80, "computadora"]],
-#	"artemis2": [[0.15, "antena"], [0.35, "asteroides"], [0.55, "computadora"], [0.72, "tormenta"], [0.88, "valvulas"]],
-#}
-const PROBABILIDAD_VALVULAS_ARTEMIS := 0.4   # Artemis casi nunca tiene falla de válvulas
+# Eventos aleatorios: cada viaje tiene entre EVENTOS_MIN y EVENTOS_MAX.
+# Se reparten en bloques de tiempo iguales (con 4 eventos salen al 20, 40, 60 y 80 %)
+# y nunca sale el mismo minijuego dos veces seguidas.
+const EVENTOS_DISPONIBLES := ["asteroides", "oxigeno", "electrico"]
+const EVENTOS_MIN := 5
+const EVENTOS_MAX := 5
 
 const INTRO := [
 	"Ya vamos rumbo a la Luna, director. Son unos 3 días de viaje, casi todo con los motores apagados.",
@@ -67,6 +60,14 @@ const AVISOS := {
 		"¡Alarma 1202! En el Apollo 11 la computadora se saturó durante el descenso a la Luna.",
 		"Por suerte sabía descartar lo menos importante. Elimina los procesos basura (ámbar), ¡pero no toques los vitales (verdes)!",
 	],
+	"oxigeno": [
+		"¡Falla crítica de oxígeno! La válvula principal se atascó. En el Apollo 13 un tanque de oxígeno explotó camino a la Luna.",
+		"Abre las 3 válvulas auxiliares: mantén presionada cada una hasta que su círculo se llene de verde. ¡Mientras tardes, perdemos oxígeno!",
+	],
+	"electrico": [
+		"¡Falla en la distribución eléctrica! Si se cae la energía, se apaga el soporte de vida.",
+		"Enciende todos los switches de la matriz. Mientras haya apagados se gastan las baterías... ¡y algunos se van a botar solos!",
+	],
 	"antena": [
 		"Perdimos la señal con la Tierra. Mientras más nos alejamos, más débil llega.",
 		"La NASA usa la Red del Espacio Profundo para hablar con las naves. Ajusta la onda verde con W/S y A/D hasta que quede sobre la azul.",
@@ -77,12 +78,16 @@ const BIEN := {
 	"asteroides": "¡Esquivamos todo! Ni un rasguño en el casco.",
 	"tormenta": "¡Escudo cerrado! Nos refugiamos hasta que pase la tormenta.",
 	"computadora": "¡CPU bajo control! La computadora vuelve a guiarnos.",
+	"oxigeno": "¡Válvulas abiertas! El oxígeno vuelve a fluir a la cabina.",
+	"electrico": "¡Energía restaurada! Todos los sistemas vuelven a estar en línea.",
 	"antena": "¡Enlace restablecido! Ya estamos mandando datos a la Tierra otra vez.",
 }
 const MAL := {
 	"asteroides": "Nos pegaron algunas rocas. El casco quedó al %d%%.",
 	"tormenta": "¡La radiación nos alcanzó! Se alteraron los monitores y perdimos datos científicos.",
 	"computadora": "La computadora nos desvió de la ruta. Gastamos combustible para corregir y retrasamos el viaje.",
+	"oxigeno": "No abrimos todas las válvulas a tiempo y perdimos mucho oxígeno. ¡Hay que tener cuidado!",
+	"electrico": "No restauramos toda la energía a tiempo. Las baterías quedaron al %d%%.",
 	"antena": "No logramos alinear bien la antena. La señal llega débil: juntaremos menos datos.",
 }
 # ---------------------------------------------------------
@@ -97,6 +102,7 @@ var id_nave := "apollo11"
 # Recursos de la nave (los minijuegos los cambian)
 var oxigeno := 100.0
 var combustible := 100.0
+var energia := 100.0        # baterías de la nave (no se regenera)
 var casco := 100.0
 var datos := 0.0
 var progreso := 0.0
@@ -148,16 +154,14 @@ func _ready() -> void:
 
 	# --- Lo que hacen las mejoras del taller en el viaje ---
 	combustible = clamp(50.0 + Mision.valor(id_nave, "propulsion") * 0.5, 0.0, 100.0)
+	energia = clamp(40.0 + Mision.valor(id_nave, "energia") * 0.6, 0.0, 100.0)
 	mult_oxigeno = 1.3 - Mision.valor(id_nave, "energia") / 200.0
 	casco_reforzado = Mision.valor(id_nave, "masa") >= 70
 	dano_casco = 20.0 if casco_reforzado else 30.0
 	tasa_datos = Mision.datos_por_capa(id_nave) / 40.0
 
-	# --- Fallas de esta nave ---
-	for e in FALLAS.get(id_nave, FALLAS["apollo11"]):
-		if id_nave == "artemis2" and e[1] == "valvulas" and randf() > PROBABILIDAD_VALVULAS_ARTEMIS:
-			continue
-		eventos.append(e)
+	# --- Eventos aleatorios de este viaje ---
+	_sortear_eventos()
 
 	var negro := ColorRect.new()
 	negro.color = Color.BLACK
@@ -208,6 +212,22 @@ func _ready() -> void:
 	_crear_dialogo()
 	_intro()
 	_transicion_de_entrada()
+
+
+## Elige entre EVENTOS_MIN y EVENTOS_MAX eventos, repartidos en bloques iguales
+## y sin repetir el mismo minijuego dos veces seguidas.
+func _sortear_eventos() -> void:
+	eventos.clear()
+	var cantidad := randi_range(EVENTOS_MIN, EVENTOS_MAX)
+	var anterior := ""
+	for i in cantidad:
+		var opciones: Array = EVENTOS_DISPONIBLES.duplicate()
+		opciones.erase(anterior)
+		var tipo: String = opciones.pick_random()
+		var momento := float(i + 1) / float(cantidad + 1)
+		eventos.append([momento, tipo])
+		anterior = tipo
+	print("Eventos de este viaje: ", eventos)
 
 
 func _cargar(ruta: String) -> Texture2D:
@@ -293,7 +313,6 @@ func _process(delta: float) -> void:
 	if estado == "viajando":
 		progreso = min(progreso + delta / DURACION_VIAJE, 1.0)
 		datos += tasa_datos * factor_antena * delta
-		oxigeno = min(oxigeno + 3.0 * delta, 100.0)
 		var d: int = clamp(1 + int(progreso * 3.0), 1, 3)
 		if d > dia:
 			dia = d
@@ -344,6 +363,10 @@ func _iniciar_minijuego(tipo: String) -> void:
 	match tipo:
 		"asteroides":
 			mj = MinijuegoAsteroides.new()
+		"electrico":
+			mj = MinijuegoElectrico.new()
+		"oxigeno":
+			mj = MinijuegoOxigeno.new()
 		_:
 			push_warning("El minijuego '%s' todavía no está integrado" % tipo)
 			estado = "viajando"
@@ -380,11 +403,21 @@ func _fin_minijuego(exito: bool, tipo: String) -> void:
 				combustible = max(combustible - 10.0, 0.0)
 		"antena":
 			factor_antena = 1.0 if exito else 0.5
+		"oxigeno":
+			if not exito or oxigeno <= 0.0:
+				_fallar("Nos quedamos sin oxígeno.")
+				return
+		"electrico":
+			if not exito or energia <= 0.0:
+				_fallar("Nos quedamos sin energía y se apagaron todos los sistemas.")
+				return
 
 	if exito:
 		decir([BIEN.get(tipo, "¡Bien hecho!")])
 	elif tipo == "asteroides":
 		decir([MAL["asteroides"] % int(casco)])
+	elif tipo == "electrico":
+		decir([MAL["electrico"] % int(energia)])
 	else:
 		decir([MAL.get(tipo, "Eso no salió bien, pero seguimos.")])
 
@@ -577,7 +610,7 @@ func _dibujar_hud() -> void:
 	# --- Línea de estado ---
 	var estado_r := R(232, 52, 560, 20)
 	hud.draw_rect(estado_r, Color(0.05, 0.06, 0.08, 0.75))
-	var linea := "DÍA %d DE 3   |   O2 %d%%   |   FUEL %d%%   |   CASCO %d%%   |   DATOS %d" % [dia, int(oxigeno), int(combustible), int(casco), int(datos)]
+	var linea := "DÍA %d DE 3  |  O2 %d%%  |  FUEL %d%%  |  ENERGÍA %d%%  |  CASCO %d%%  |  DATOS %d" % [dia, int(oxigeno), int(combustible), int(energia), int(casco), int(datos)]
 	_texto(hud, Vector2(estado_r.position.x, estado_r.position.y + 15 * k), linea, 10, Color("dfe6ee"), estado_r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
 
 	# --- Medidores de la pared izquierda (encima de los de la imagen) ---
@@ -598,11 +631,11 @@ func _dibujar_hud() -> void:
 	var ang: float = lerp(deg_to_rad(135.0), deg_to_rad(405.0), combustible / 100.0)
 	hud.draw_line(c, c + Vector2.from_angle(ang) * 17 * k, Color("ffffff"), 2.0 * k)
 	hud.draw_circle(c, 2.5 * k, Color("ff4a3d"))
-	# Barrita de CASCO (sobre la barra naranja debajo del reloj)
-	var ca := R(126, 228, 48, 11)
-	hud.draw_rect(ca, Color("101317"))
-	hud.draw_rect(Rect2(ca.position, Vector2(ca.size.x * casco / 100.0, ca.size.y)), _color_nivel(casco))
-	_texto(hud, P(127, 252), "CASCO", 7, Color("dfe6ee"))
+	# Barrita de ENERGÍA (sobre la barra naranja debajo del reloj)
+	var en := R(126, 228, 48, 11)
+	hud.draw_rect(en, Color("101317"))
+	hud.draw_rect(Rect2(en.position, Vector2(en.size.x * energia / 100.0, en.size.y)), _color_nivel(energia))
+	_texto(hud, P(124, 252), "ENERGÍA", 7, Color("dfe6ee"))
 
 
 func _dibujar_vineta() -> void:
@@ -1135,3 +1168,491 @@ class MinijuegoAsteroides extends Control:
 			texto(P(572, 406), "RETRASO 0.2s", 8, Color("8a2a14"))
 		if aviso_combustible > 0.0:
 			texto_centrado(rej, rej.get_center().y, "¡SIN COMBUSTIBLE RCS!", 13, C_ROJO)
+
+
+# =====================================================================
+# MINIJUEGO: FALLA EN LA DISTRIBUCIÓN ELÉCTRICA
+# Aparece el panel de conmutadores con 12 switches. Hay que encenderlos
+# TODOS (clic en cada uno). No hay límite de tiempo, pero mientras haya
+# switches apagados se gastan las baterías (ENERGÍA). Si llega a 0, se pierde.
+# Cada 1.5 segundos uno de los que ya estaban encendidos se bota.
+# Se dibuja con coordenadas de la imagen de la cabina (1024 x 576).
+# =====================================================================
+class MinijuegoElectrico extends Control:
+	signal terminado(exito: bool)
+
+	const C_OSCURO := Color("1c1f24")
+	const C_ROJO := Color("ff4a3d")
+	const C_VERDE := Color("5ee36a")
+	const C_AMBAR := Color("ffb347")
+	const C_TEXTO := Color("f4eefc")
+
+	const PANEL := Rect2(208, 128, 226, 394)
+	const COLS := 4
+	const FILAS := 3
+	const ORIGEN := Vector2(226, 206)     # esquina del primer switch
+	const PASO_X := 50.0
+	const PASO_Y := 78.0
+	const TAM := Vector2(34, 58)          # tamaño de cada switch
+	const GASTO_POR_APAGADO := 0.5        # % de energía por segundo por cada switch apagado
+	const CADA_BOTE := 1.5                # cada cuánto se bota un switch encendido
+	const ENCENDIDOS_AL_INICIO := 4
+
+	var viaje
+	var k := 1.0
+	var fuente: Font
+	var nave := "apollo11"
+	var tiempo := 0.0
+	var acabado := false
+
+	var encendidos := []       # 12 valores true/false
+	var destello := []         # tiempo de destello rojo de cada switch (cuando se bota)
+	var reloj_bote := CADA_BOTE
+
+
+	func configurar(escena: Node, escala: float, f: Font, id: String) -> void:
+		viaje = escena
+		k = escala
+		fuente = f
+		nave = id
+
+
+	func _ready() -> void:
+		position = Vector2.ZERO
+		size = Vector2(1024, 576) * k
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		modulate.a = 0.0
+		create_tween().tween_property(self, "modulate:a", 1.0, 0.25)
+		for i in COLS * FILAS:
+			encendidos.append(false)
+			destello.append(0.0)
+		var lugares := range(COLS * FILAS)
+		lugares.shuffle()
+		for i in ENCENDIDOS_AL_INICIO:
+			encendidos[lugares[i]] = true
+
+
+	func _process(delta: float) -> void:
+		tiempo += delta
+		if not acabado:
+			_actualizar(delta)
+		queue_redraw()
+
+
+	func _actualizar(delta: float) -> void:
+		for i in destello.size():
+			destello[i] = max(float(destello[i]) - delta, 0.0)
+
+		if _todos_encendidos():
+			_terminar(true)
+			return
+
+		# Mientras haya switches apagados, se gastan las baterías
+		var apagados := 0
+		for e in encendidos:
+			if not e:
+				apagados += 1
+		viaje.energia = max(viaje.energia - apagados * GASTO_POR_APAGADO * delta, 0.0)
+		if viaje.energia <= 0.0:
+			_terminar(false)
+			return
+
+		# Cada 1.5 s se bota uno de los encendidos
+		reloj_bote -= delta
+		if reloj_bote <= 0.0:
+			reloj_bote = CADA_BOTE
+			var prendidos := []
+			for i in encendidos.size():
+				if encendidos[i]:
+					prendidos.append(i)
+			if not prendidos.is_empty():
+				var i: int = prendidos.pick_random()
+				encendidos[i] = false
+				destello[i] = 0.5
+				viaje.sacudir(0.15)
+
+
+	func _todos_encendidos() -> bool:
+		for e in encendidos:
+			if not e:
+				return false
+		return true
+
+
+	func _terminar(exito: bool) -> void:
+		if acabado:
+			return
+		acabado = true
+		terminado.emit(exito)
+		var t := create_tween()
+		t.tween_interval(0.8)
+		t.tween_property(self, "modulate:a", 0.0, 0.3)
+		t.tween_callback(queue_free)
+
+
+	func _rect_switch(i: int) -> Rect2:
+		var c := i % COLS
+		var f := i / COLS
+		return R(ORIGEN.x + c * PASO_X, ORIGEN.y + f * PASO_Y, TAM.x, TAM.y)
+
+
+	func _gui_input(event: InputEvent) -> void:
+		if acabado:
+			return
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			for i in encendidos.size():
+				if _rect_switch(i).grow(4 * k).has_point(event.position):
+					encendidos[i] = not encendidos[i]
+					return
+
+
+	# ---------- Ayudas para dibujar ----------
+
+	func R(x: float, y: float, w: float, h: float) -> Rect2:
+		return Rect2(x * k, y * k, w * k, h * k)
+
+
+	func RR(r: Rect2) -> Rect2:
+		return Rect2(r.position * k, r.size * k)
+
+
+	func P(x: float, y: float) -> Vector2:
+		return Vector2(x * k, y * k)
+
+
+	func texto(pos: Vector2, s: String, tam: float, color: Color, ancho: float = -1.0, alineacion: int = HORIZONTAL_ALIGNMENT_LEFT) -> void:
+		var t := int(tam * k)
+		draw_string_outline(fuente, pos, s, alineacion, ancho, t, int(3 * k), Color(0, 0, 0, 0.8))
+		draw_string(fuente, pos, s, alineacion, ancho, t, color)
+
+
+	# ---------- Dibujo ----------
+
+	func _draw() -> void:
+		# Marco rojo sobre el panel de OXYGEN (la energía alimenta el soporte de vida)
+		var ox := R(12, 112, 86, 160)
+		var a := 0.5 + 0.4 * sin(tiempo * 9.0)
+		draw_rect(ox, Color(1, 0.2, 0.15, a), false, 3.0 * k)
+
+		# Placa metálica
+		var panel := RR(PANEL)
+		var metal := Color("6a6458")
+		draw_rect(panel.grow(3.0 * k), C_OSCURO)
+		draw_rect(panel, metal)
+		draw_rect(Rect2(panel.position, Vector2(panel.size.x, 3.0 * k)), metal.lightened(0.2))
+		draw_rect(Rect2(panel.position + Vector2(0, panel.size.y - 3.0 * k), Vector2(panel.size.x, 3.0 * k)), metal.darkened(0.25))
+		var m := 6.0 * k
+		for p in [panel.position + Vector2(m, m), panel.position + Vector2(panel.size.x - m, m),
+				panel.position + Vector2(m, panel.size.y - m), panel.end - Vector2(m, m)]:
+			draw_circle(p, 2.2 * k, metal.darkened(0.4))
+
+		# Encabezado
+		var cab := R(218, 138, 206, 56)
+		draw_rect(cab.grow(2 * k), C_OSCURO)
+		draw_rect(cab, Color("170707"))
+		texto(P(224, 154), "¡FALLA DE DISTRIBUCIÓN!", 10, C_ROJO if fmod(tiempo, 0.6) < 0.35 else Color("ff8a6a"))
+		texto(P(224, 169), "RECONFIGURAR MATRIZ DE", 9, C_AMBAR)
+		texto(P(224, 183), "CONMUTADORES: RESTAURAR ENERGÍA", 9, C_AMBAR)
+
+		# Línea verde de referencia detrás de los switches
+		for f in FILAS:
+			var y := (ORIGEN.y + f * PASO_Y + TAM.y * 0.28) * k
+			draw_line(Vector2((ORIGEN.x - 8) * k, y), Vector2((ORIGEN.x + (COLS - 1) * PASO_X + TAM.x + 8) * k, y), Color(0.37, 0.89, 0.42, 0.35), 2.0 * k)
+
+		# Switches
+		for i in encendidos.size():
+			_dibujar_switch(i)
+
+		# Pie: instrucciones, tiempo y contador
+		var pie := R(218, 446, 206, 66)
+		draw_rect(pie.grow(2 * k), C_OSCURO)
+		draw_rect(pie, Color("170707"))
+		texto(P(224, 462), "ENCIENDE TODOS LOS SWITCHES", 9, C_AMBAR)
+		texto(P(224, 476), "(clic en cada uno)", 8, C_TEXTO)
+		var n := 0
+		for e in encendidos:
+			if e:
+				n += 1
+		texto(P(224, 500), "%d / %d" % [n, encendidos.size()], 14, C_VERDE if n == encendidos.size() else C_TEXTO)
+		var en: float = viaje.energia
+		var c_energia := C_ROJO if en < 25.0 else (C_AMBAR if en < 50.0 else C_VERDE)
+		texto(P(300, 500), "ENERGÍA %d%%" % int(en), 11, c_energia)
+		# Barra de energía
+		var barra := R(224, 504, 194, 4)
+		draw_rect(barra, Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(barra.position, Vector2(barra.size.x * clamp(en / 100.0, 0.0, 1.0), barra.size.y)), c_energia)
+
+
+	func _dibujar_switch(i: int) -> void:
+		var r := _rect_switch(i)
+		var on: bool = encendidos[i]
+		# Caja
+		draw_rect(r.grow(2 * k), C_OSCURO)
+		draw_rect(r, Color("3e3b35"))
+		draw_rect(Rect2(r.position, Vector2(r.size.x, 2 * k)), Color("5a564d"))
+		# Foquito arriba
+		var foco := r.position + Vector2(r.size.x * 0.5, 7 * k)
+		var color_foco := C_VERDE if on else C_ROJO
+		if not on and fmod(tiempo + i * 0.13, 0.8) > 0.5:
+			color_foco = Color("7a1a14")
+		draw_circle(foco, 4.2 * k, C_OSCURO)
+		draw_circle(foco, 3.2 * k, color_foco)
+		if on:
+			draw_circle(foco, 6.0 * k, Color(0.37, 0.89, 0.42, 0.25))
+		# Ranura y palanca (arriba = encendido, abajo = apagado)
+		var ranura := Rect2(r.position + Vector2(r.size.x * 0.3, 16 * k), Vector2(r.size.x * 0.4, r.size.y - 22 * k))
+		draw_rect(ranura, Color("15171a"))
+		var alto_palanca := ranura.size.y * 0.5
+		var y_palanca := ranura.position.y if on else ranura.end.y - alto_palanca
+		var palanca := Rect2(Vector2(ranura.position.x - 2 * k, y_palanca), Vector2(ranura.size.x + 4 * k, alto_palanca))
+		draw_rect(palanca, Color("c8ccd0") if on else Color("8a8f95"))
+		draw_rect(palanca, C_OSCURO, false, 1.0 * k)
+		# Destello rojo cuando se acaba de botar
+		if float(destello[i]) > 0.0:
+			draw_rect(r.grow(3 * k), Color(1, 0.2, 0.1, float(destello[i])), false, 3.0 * k)
+
+
+# =====================================================================
+# MINIJUEGO: FALLA DE OXÍGENO (VÁLVULAS)
+# La válvula principal de O2 se atascó. Hay que abrir las 3 válvulas
+# auxiliares: mantén presionada cada una (clic sostenido o teclas 1, 2, 3)
+# 2.5 segundos, hasta que el círculo de atrás se llene de verde.
+# No hay límite de tiempo, pero mientras haya válvulas cerradas se pierde
+# oxígeno. Si llega a 0, se pierde la misión.
+# Se dibuja con coordenadas de la imagen de la cabina (1024 x 576).
+# =====================================================================
+class MinijuegoOxigeno extends Control:
+	signal terminado(exito: bool)
+
+	const C_OSCURO := Color("1c1f24")
+	const C_ROJO := Color("ff4a3d")
+	const C_VERDE := Color("5ee36a")
+	const C_AMBAR := Color("ffb347")
+	const C_TEXTO := Color("f4eefc")
+
+	const PANEL := Rect2(208, 130, 226, 312)
+	const AVISO := Rect2(208, 448, 226, 80)
+	const VALVULAS := [Vector2(246, 272), Vector2(320, 272), Vector2(394, 272)]
+	const MEDIDORES_Y := 222.0
+	const RADIO := 27.0
+	const REGULADOR := Vector2(320, 388)
+	const GASTO_POR_VALVULA := 1.2   # % de oxígeno por segundo por cada válvula cerrada
+	const SEGUNDOS_POR_VALVULA := 2.5
+	const TECLAS := [KEY_1, KEY_2, KEY_3]
+
+	var viaje
+	var k := 1.0
+	var fuente: Font
+	var nave := "apollo11"
+	var tiempo := 0.0
+	var acabado := false
+
+	var progreso := [0.0, 0.0, 0.0]   # 0 a 1 de cada válvula
+	var giro := [0.0, 0.0, 0.0]
+	var giro_regulador := 0.0
+	var con_mouse := -1               # válvula que se está presionando con el mouse
+
+
+	func configurar(escena: Node, escala: float, f: Font, id: String) -> void:
+		viaje = escena
+		k = escala
+		fuente = f
+		nave = id
+
+
+	func _ready() -> void:
+		position = Vector2.ZERO
+		size = Vector2(1024, 576) * k
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		modulate.a = 0.0
+		create_tween().tween_property(self, "modulate:a", 1.0, 0.25)
+
+
+	func _process(delta: float) -> void:
+		tiempo += delta
+		if not acabado:
+			_actualizar(delta)
+		queue_redraw()
+
+
+	func _presionada(i: int) -> bool:
+		return con_mouse == i or Input.is_physical_key_pressed(TECLAS[i])
+
+
+	func _actualizar(delta: float) -> void:
+		var alguna := false
+		for i in 3:
+			if progreso[i] < 1.0 and _presionada(i):
+				progreso[i] = min(float(progreso[i]) + delta / SEGUNDOS_POR_VALVULA, 1.0)
+				giro[i] = float(giro[i]) + 4.0 * delta
+				alguna = true
+		if alguna:
+			giro_regulador += 2.5 * delta
+
+		# El oxígeno baja mientras las válvulas sigan cerradas
+		var abiertas := 0
+		for p in progreso:
+			if p >= 1.0:
+				abiertas += 1
+		viaje.oxigeno = max(viaje.oxigeno - (3 - abiertas) * GASTO_POR_VALVULA * viaje.mult_oxigeno * delta, 0.0)
+
+		if abiertas == 3:
+			_terminar(true)
+		elif viaje.oxigeno <= 0.0:
+			_terminar(false)
+
+
+	func _terminar(exito: bool) -> void:
+		if acabado:
+			return
+		acabado = true
+		con_mouse = -1
+		terminado.emit(exito)
+		var t := create_tween()
+		t.tween_interval(0.8)
+		t.tween_property(self, "modulate:a", 0.0, 0.3)
+		t.tween_callback(queue_free)
+
+
+	func _gui_input(event: InputEvent) -> void:
+		if acabado:
+			return
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				for i in 3:
+					var c: Vector2 = VALVULAS[i] * k
+					if c.distance_to(event.position) < (RADIO + 8.0) * k:
+						con_mouse = i
+						return
+			else:
+				con_mouse = -1
+
+
+	# ---------- Ayudas para dibujar ----------
+
+	func R(x: float, y: float, w: float, h: float) -> Rect2:
+		return Rect2(x * k, y * k, w * k, h * k)
+
+
+	func RR(r: Rect2) -> Rect2:
+		return Rect2(r.position * k, r.size * k)
+
+
+	func P(x: float, y: float) -> Vector2:
+		return Vector2(x * k, y * k)
+
+
+	func texto(pos: Vector2, s: String, tam: float, color: Color, ancho: float = -1.0, alineacion: int = HORIZONTAL_ALIGNMENT_LEFT) -> void:
+		var t := int(tam * k)
+		draw_string_outline(fuente, pos, s, alineacion, ancho, t, int(3 * k), Color(0, 0, 0, 0.8))
+		draw_string(fuente, pos, s, alineacion, ancho, t, color)
+
+
+	func _rueda(c: Vector2, r: float, angulo: float, color: Color) -> void:
+		draw_arc(c, r, 0, TAU, 32, color, 4.0 * k)
+		for s in 3:
+			var a := angulo + s * TAU / 3.0
+			draw_line(c, c + Vector2.from_angle(a) * r, color, 3.0 * k)
+		draw_circle(c, 4.0 * k, color.darkened(0.3))
+
+
+	# ---------- Dibujo ----------
+
+	func _draw() -> void:
+		# Marco rojo sobre el panel de OXYGEN
+		var a := 0.5 + 0.4 * sin(tiempo * 9.0)
+		draw_rect(R(12, 112, 86, 160), Color(1, 0.2, 0.15, a), false, 3.0 * k)
+
+		# Placa metálica
+		var panel := RR(PANEL)
+		var metal := Color("6a6458")
+		draw_rect(panel.grow(3.0 * k), C_OSCURO)
+		draw_rect(panel, metal)
+		draw_rect(Rect2(panel.position, Vector2(panel.size.x, 3.0 * k)), metal.lightened(0.2))
+		var m := 6.0 * k
+		for p in [panel.position + Vector2(m, m), panel.position + Vector2(panel.size.x - m, m),
+				panel.position + Vector2(m, panel.size.y - m), panel.end - Vector2(m, m)]:
+			draw_circle(p, 2.2 * k, metal.darkened(0.4))
+
+		# Encabezado
+		var cab := R(218, 140, 206, 42)
+		draw_rect(cab.grow(2 * k), C_OSCURO)
+		draw_rect(cab, Color("0d0f12"))
+		texto(P(224, 157), "¡FALLA CRÍTICA!", 10, C_ROJO if fmod(tiempo, 0.6) < 0.35 else Color("ff8a6a"))
+		texto(P(224, 173), "ESTABILIZAR SISTEMAS O2", 10, C_TEXTO)
+
+		# Tubería de las válvulas al regulador
+		var tubo := Color("4d4a43")
+		for c in VALVULAS:
+			draw_line(P(c.x, c.y + 30), P(c.x, 345), tubo, 8.0 * k)
+		draw_line(P(246, 345), P(394, 345), tubo, 8.0 * k)
+		draw_line(P(320, 345), P(320, 360), tubo, 8.0 * k)
+
+		for i in 3:
+			_dibujar_valvula(i)
+
+		# Regulador de flujo (gira cuando abres una válvula)
+		texto(P(262, 356), "REGULADOR DE FLUJO", 8, C_TEXTO)
+		var rc := REGULADOR * k
+		draw_circle(rc, 33.0 * k, C_OSCURO)
+		_rueda(rc, 28.0 * k, giro_regulador, Color("9aa0a6"))
+		draw_line(rc, rc + Vector2.from_angle(giro_regulador * 0.5 - 0.8) * 24.0 * k, Color("c0392b"), 3.0 * k)
+
+		# Luces de nivel a la derecha del regulador
+		var abiertas := 0
+		for p in progreso:
+			if p >= 1.0:
+				abiertas += 1
+		for j in 3:
+			var luz := R(404, 404 - j * 12, 14, 8)
+			draw_rect(luz, C_VERDE if j < abiertas else Color("5a1410"))
+
+		# Aviso rojo de abajo con tiempo
+		var av := RR(AVISO)
+		draw_rect(av.grow(2 * k), C_OSCURO)
+		draw_rect(av, Color("140606"))
+		texto(P(214, 465), "ALERTA: VÁLVULA PRINCIPAL O2", 9, C_ROJO)
+		texto(P(214, 479), "ATASCADA. MANTÉN PRESIONADAS", 9, C_ROJO)
+		texto(P(214, 493), "LAS VÁLVULAS (CLIC o 1-2-3)", 9, C_ROJO)
+		var ox: float = viaje.oxigeno
+		var c_ox := C_ROJO if ox < 25.0 else (C_AMBAR if ox < 50.0 else C_VERDE)
+		texto(P(214, 516), "OXÍGENO: %d%%" % int(ox), 12, c_ox)
+		var barra := R(214, 521, 214, 4)
+		draw_rect(barra, Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(barra.position, Vector2(barra.size.x * clamp(ox / 100.0, 0.0, 1.0), barra.size.y)), c_ox)
+
+
+	func _dibujar_valvula(i: int) -> void:
+		var c: Vector2 = VALVULAS[i] * k
+		var r := RADIO * k
+		var p: float = progreso[i]
+		var lista := p >= 1.0
+
+		# Medidor de arriba: la aguja pasa de rojo a verde con el progreso
+		var mc := Vector2(c.x, MEDIDORES_Y * k)
+		var mr := 18.0 * k
+		draw_circle(mc, mr + 2 * k, C_OSCURO)
+		draw_circle(mc, mr, Color("d9d6cc"))
+		var a0 := deg_to_rad(200.0)
+		var a1 := deg_to_rad(340.0)
+		draw_arc(mc, mr * 0.75, a0, lerp(a0, a1, 0.6), 10, Color("e5383b"), 5.0 * k)
+		draw_arc(mc, mr * 0.75, lerp(a0, a1, 0.6), a1, 10, Color("3cb44b"), 5.0 * k)
+		var aguja: float = lerp(a0, a1, 0.1 + 0.85 * p) + sin(tiempo * 30.0 + i) * 0.03 * (1.0 - p)
+		draw_line(mc, mc + Vector2.from_angle(aguja) * mr * 0.85, Color("8b0000"), 2.0 * k)
+		draw_circle(mc, 2.5 * k, C_OSCURO)
+
+		# Círculo de atrás: se llena de verde mientras la mantienes presionada
+		draw_circle(c, r + 6 * k, Color(0.9, 0.2, 0.15, 0.35) if not lista else Color(0.37, 0.89, 0.42, 0.55))
+		if p > 0.0 and not lista:
+			draw_arc(c, r + 3 * k, -PI * 0.5, -PI * 0.5 + TAU * p, 40, Color(0.37, 0.89, 0.42, 0.9), 6.0 * k)
+		draw_circle(c, r - 2 * k, Color("2e2c28"))
+		var color_rueda := Color("c8ccd0") if _presionada(i) or lista else Color("8a8f95")
+		_rueda(c, r - 6 * k, giro[i], color_rueda)
+		if _presionada(i) and not lista:
+			draw_arc(c, r + 10 * k, 0, TAU, 32, Color(1, 1, 1, 0.35), 1.5 * k)
+
+		# Placa con el número
+		var placa := R(VALVULAS[i].x - 13, 312, 26, 22)
+		draw_rect(placa.grow(1.5 * k), C_OSCURO)
+		draw_rect(placa, Color("4a4740"))
+		texto(placa.position + Vector2(8, 17) * k, str(i + 1), 14, C_VERDE if lista else C_TEXTO)
