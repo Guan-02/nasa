@@ -1,8 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://b1flr0kt2xa2f"]
 
 [ext_resource type="Script" uid="uid://dr6udf7qnx5yx" path="res://scenes/pantallas_nuevas_2/scripts/intro.gd" id="1_intro"]
 
-[node name="Intro" type="Control"]
+[node name="Intro" type="Control" unique_id=486326229]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
