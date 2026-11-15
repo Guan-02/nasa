@@ -17,18 +17,23 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+InputSetup="*uid://c0sn8vllqdsnm"
+MenuPausa1="*uid://cmhtb8fi47v5c"
 Idioma="*res://scripts/idioma.gd"
 Bitacora="*res://scripts/bitacora.gd"
-MenuPausa1="*uid://cmhtb8fi47v5c"
+
+[display]
+
+window/size/mode=2
+window/size/window_width_override=1140
+window/size/window_height_override=810
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/stretch/scale_mode="integer"
 
 [internationalization]
 
 locale/fallback="es"
-
-[display]
-
-window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
 
 [physics]
 
@@ -36,4 +41,5 @@ window/stretch/aspect="expand"
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
