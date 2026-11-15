@@ -13,6 +13,8 @@ const RUTA_FUENTE := "res://fuentes/pixel.ttf"
 const MODULO_LUNAR := "res://assets/naves/modulo_lunar.png"
 const ESCENA_VIAJE := "res://scenes/viaje.tscn"   # viaje de 3 días en primera persona
 const ESCENA_SIGUIENTE := ""
+const ESCENA_ALUNIZAJE := "res://scenes/Aterrizaje/Aterrizaje_2.0.tscn"   # minijuego de alunizaje
+const NAVES_CON_ALUNIZAJE := ["apollo11", "gemini4"]   # Artemis II solo hace sobrevuelo
 const ESCENA_TALLER := "res://scenes/taller.tscn"
 const ESCENA_SELECCION := "res://scenes/seleccion_nave.tscn"
 const ESCENA_MENU := "res://scenes/menu_principal.tscn"
@@ -56,6 +58,9 @@ const LINEAS_ALUNIZAJE := [
 	"'El Águila ha aterrizado.' El 20 de julio de 1969, el Apollo 11 llegó al Mar de la Tranquilidad.",
 	"¡Misión cumplida, director! Llegamos a la Luna.",
 ]
+const LINEAS_A_ALUNIZAR := [
+	"¡Ahora te toca a ti, director! Toma los controles y aluniza con cuidado.",
+]
 const LINEAS_GEMINI := [
 	"Dato curioso: ninguna Gemini fue a la Luna. Servían para practicar en órbita las maniobras que luego usó el programa Apollo.",
 	"¡Pero en nuestra misión sí lo logramos! ¡Misión cumplida, director!",
@@ -96,6 +101,7 @@ var t_acercamiento := 0.0
 var escala_orbita := 1.0
 var listo_modulo := false
 var giro_sobrevuelo := 0.0
+var yendo_a_alunizaje := false
 
 # Tierra
 var centro_tierra := Vector2.ZERO
@@ -463,6 +469,9 @@ func _entrar_en_orbita_lunar() -> void:
 func _fin_explicacion_orbita() -> void:
 	if id_nave == "apollo11":
 		decir(LINEAS_APOLLO, func(): listo_modulo = true)
+	elif _toca_alunizaje():
+		# Otras naves que alunizan: después de entrar en órbita, directo al minijuego
+		decir(LINEAS_A_ALUNIZAR, _ir_al_alunizaje)
 	else:
 		decir(LINEAS_GEMINI)
 		get_tree().create_timer(12.0).timeout.connect(_terminar)
@@ -482,8 +491,51 @@ func _soltar_modulo() -> void:
 	var destino := centro_luna + Vector2(-radio_luna * 0.05, -radio_luna * 0.96) - Vector2(0, 17.0 * k)
 	var t := create_tween()
 	t.tween_property(modulo, "position", destino + Vector2(0, -60.0 * k), 3.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if _toca_alunizaje():
+		# El módulo se separa y empieza a bajar... y el jugador toma el control
+		decir(LINEAS_A_ALUNIZAR)
+		t.tween_callback(_ir_al_alunizaje)
+		return
 	t.tween_property(modulo, "position", destino, 2.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.tween_callback(_alunizar.bind(destino))
+
+
+## ¿Esta nave pasa al minijuego de alunizaje?
+func _toca_alunizaje() -> bool:
+	if not (id_nave in NAVES_CON_ALUNIZAJE):
+		print("[orbita] La nave '%s' no está en NAVES_CON_ALUNIZAJE: termina sin minijuego." % id_nave)
+		return false
+	if not ResourceLoader.exists(ESCENA_ALUNIZAJE):
+		push_error("[orbita] No encuentro la escena del alunizaje: %s  <- revisa ESCENA_ALUNIZAJE" % ESCENA_ALUNIZAJE)
+		return false
+	return true
+
+
+## Fundido a negro (sin detener la animación) y cambio a la escena del alunizaje
+func _ir_al_alunizaje() -> void:
+	if yendo_a_alunizaje:
+		return
+	yendo_a_alunizaje = true
+	print("[orbita] Pasando al minijuego de alunizaje: ", ESCENA_ALUNIZAJE)
+	var capa := CanvasLayer.new()
+	capa.layer = 50
+	add_child(capa)
+	var negro := ColorRect.new()
+	negro.color = Color.BLACK
+	negro.size = pantalla
+	negro.modulate.a = 0.0
+	negro.mouse_filter = Control.MOUSE_FILTER_STOP
+	capa.add_child(negro)
+	var t := create_tween()
+	t.tween_interval(1.5)   # deja ver un momento la animación
+	t.tween_property(negro, "modulate:a", 1.0, 1.0)
+	t.tween_callback(_cambiar_al_alunizaje)
+
+
+func _cambiar_al_alunizaje() -> void:
+	var error := get_tree().change_scene_to_file(ESCENA_ALUNIZAJE)
+	if error != OK:
+		push_error("No se pudo abrir %s (error %d)" % [ESCENA_ALUNIZAJE, error])
 
 
 func _alunizar(destino: Vector2) -> void:
