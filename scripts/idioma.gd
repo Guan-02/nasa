@@ -3,8 +3,8 @@ extends Node
 ##  IDIOMA DEL JUEGO  (AUTOLOAD)
 ## ---------------------------------------------------------------------
 ##  Registrado en: Proyecto > Configuración del Proyecto > Globals > Autoload
-##     Ruta:   res://scripts/idioma.gd
-##     Nombre: Idioma      (debe ir ARRIBA de los demás autoloads)
+##      Ruta:    res://scripts/idioma.gd
+##      Nombre: Idioma       (debe ir ARRIBA de los demás autoloads)
 ##
 ##  Cómo funciona:
 ##  Los textos del juego están escritos en español dentro de los scripts.
@@ -14,7 +14,7 @@ extends Node
 ##
 ##  Desde cualquier parte del juego:
 ##     Idioma.actual            -> "es" o "en"
-##     Idioma.elegir("en")      -> cambia el idioma y lo guarda
+##     Idioma.elegir("en")      -> cambia el idioma en memoria
 ##     Idioma.alternar()        -> cambia de español a inglés y al revés
 ##     Idioma.es_ingles()       -> true si está en inglés
 ## =====================================================================
@@ -23,7 +23,6 @@ extends Node
 signal cambiado(codigo: String)
 
 const RUTA_TRADUCCIONES := "res://data/traducciones.json"
-const RUTA_PREFERENCIA := "user://idioma.json"
 const IDIOMAS := ["es", "en"]
 ## Nombre de cada idioma tal como se le muestra al jugador.
 const NOMBRES := {"es": "ESPAÑOL", "en": "ENGLISH"}
@@ -34,19 +33,14 @@ var _elegido: bool = false
 
 func _ready() -> void:
 	_cargar_traducciones()
-	var guardado := _leer_preferencia()
-	if guardado != "":
-		_elegido = true
-		_aplicar(guardado)
-	else:
-		_aplicar("es")
+	_aplicar("es")
 
 
 # ---------------------------------------------------------------------
 #  API PÚBLICA
 # ---------------------------------------------------------------------
 
-## true si el jugador ya eligió idioma alguna vez (se guarda entre partidas).
+## true si el jugador ya eligió idioma durante la sesión actual.
 func ya_eligio() -> bool:
 	return _elegido
 
@@ -55,11 +49,10 @@ func es_ingles() -> bool:
 	return actual == "en"
 
 
-## Cambia el idioma y lo recuerda para la próxima vez.
+## Cambia el idioma en memoria (no se guarda en disco).
 func elegir(codigo: String) -> void:
 	_elegido = true
 	_aplicar(codigo)
-	_guardar_preferencia()
 
 
 ## Cambia de español a inglés y al revés.
@@ -120,21 +113,3 @@ func _cargar_traducciones() -> void:
 
 	TranslationServer.add_translation(al_espanol)
 	TranslationServer.add_translation(al_ingles)
-
-
-func _leer_preferencia() -> String:
-	if not FileAccess.file_exists(RUTA_PREFERENCIA):
-		return ""
-	var datos = JSON.parse_string(FileAccess.get_file_as_string(RUTA_PREFERENCIA))
-	if datos is Dictionary and IDIOMAS.has(str(datos.get("idioma", ""))):
-		return str(datos["idioma"])
-	return ""
-
-
-func _guardar_preferencia() -> void:
-	var archivo := FileAccess.open(RUTA_PREFERENCIA, FileAccess.WRITE)
-	if archivo == null:
-		push_error("Idioma: no se pudo guardar la preferencia.")
-		return
-	archivo.store_string(JSON.stringify({"idioma": actual}, "\t"))
-	archivo.close()
