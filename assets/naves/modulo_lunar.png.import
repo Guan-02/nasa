@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bc8jx3f6pyj0d"
-path="res://.godot/imported/modulo_lunar.png-2ccdb9ca71e30f1f265184e8b3532c9d.ctex"
+path="res://.godot/imported/modulo_lunar.png-6982eb96789a7c3b56d3037cffa2af10.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/assets/naves/modulo_lunar.png"
-dest_files=["res://.godot/imported/modulo_lunar.png-2ccdb9ca71e30f1f265184e8b3532c9d.ctex"]
+source_file="res://assets/naves/modulo_lunar.png"
+dest_files=["res://.godot/imported/modulo_lunar.png-6982eb96789a7c3b56d3037cffa2af10.ctex"]
 
 [params]
 

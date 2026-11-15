@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://efmapp4aomjk"]
 
-[ext_resource type="Script" uid="uid://cdwushcjnfiqt" path="res://scenes/viaje_3_dias_1/scripts/viaje.gd" id="1_viaje"]
+[ext_resource type="Script" uid="uid://x36enhqdr5ap" path="res://scripts/viaje.gd" id="1_cj6gd"]
 
 [node name="Viaje" type="Control" unique_id=2064489848]
 layout_mode = 3
@@ -9,4 +9,4 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_viaje")
+script = ExtResource("1_cj6gd")
