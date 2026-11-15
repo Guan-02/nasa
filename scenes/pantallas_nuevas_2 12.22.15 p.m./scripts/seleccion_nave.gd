@@ -229,11 +229,11 @@ func _mostrar_nave(animar: bool) -> void:
 	var n: Dictionary = Mision.NAVES[Mision.ORDEN[indice]]
 	cohete.texture = load(n.cohete_img)
 	capsula.texture = load(n.capsula_img)
-	lbl_titulo_nave.text = "ELIGE TU NAVE  %d/%d" % [indice + 1, Mision.ORDEN.size()]
+	lbl_titulo_nave.text = TranslationServer.translate("ELIGE TU NAVE  %d/%d") % [indice + 1, Mision.ORDEN.size()]
 	lbl_nombre.text = n.nombre
 	lbl_desc.text = n.descripcion
-	lbl_ficha.text = "COHETE: %s\nAÑO: %d\nTRIPULACIÓN: %d\nDURACIÓN: %s\nDESTINO: %s\nCOSTO: %s" % [
-		n.cohete, n.anio, n.tripulacion, n.duracion, n.destino, Mision.dinero(n.costo)]
+	lbl_ficha.text = TranslationServer.translate("COHETE: %s\nAÑO: %d\nTRIPULACIÓN: %d\nDURACIÓN: %s\nDESTINO: %s\nCOSTO: %s") % [
+		n.cohete, n.anio, n.tripulacion, TranslationServer.translate(n.duracion), TranslationServer.translate(n.destino), Mision.dinero(n.costo)]
 
 	var resta: int = Mision.presupuesto - n.costo
 	lbl_costo.text = "NAVE: -" + Mision.dinero(n.costo)
@@ -282,8 +282,8 @@ func _elegir() -> void:
 	var n: Dictionary = Mision.datos_nave()
 	Mision.presupuesto_restante = Mision.presupuesto - n.costo
 	decir([
-		"¡Excelente elección! La %s ya está en la plataforma de lanzamiento." % n.nombre,
-		"Nos quedan %s para el resto de la misión. ¡Vamos al taller a equiparla!" % Mision.dinero(Mision.presupuesto_restante),
+		TranslationServer.translate("¡Excelente elección! La %s ya está en la plataforma de lanzamiento.") % n.nombre,
+		TranslationServer.translate("Nos quedan %s para el resto de la misión. ¡Vamos al taller a equiparla!") % Mision.dinero(Mision.presupuesto_restante),
 	], _ir_siguiente)
 
 
