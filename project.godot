@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 InputSetup="*uid://c0sn8vllqdsnm"
+MenuPausa1="*uid://cmhtb8fi47v5c"
 
 [display]
 
@@ -26,6 +27,7 @@ window/size/window_width_override=1140
 window/size/window_height_override=810
 window/stretch/mode="viewport"
 window/stretch/scale_mode="integer"
+<<<<<<<HEADwindow/size/mode=2
 
 [physics]
 
